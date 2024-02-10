@@ -656,8 +656,14 @@ const PAGETYPE = {
     ORIGINAL_SELLER: 102
 }
 
+function clearPriorPO() {
+    const _poContainer = document.getElementById('vvp-generic-order-success-msg');
+    _poContainer.parent().remove ();
+}
+
 function createNewSite(type, data) {
     // Unhightlight nav buttons
+    clearPriorPO();
     const _btnContainer = document.getElementById('vvp-items-button-container');
     const _selected = _btnContainer.getElementsByClassName('a-button-selected');
     for (let i = 0; i < _selected.length; i++) {
