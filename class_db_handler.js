@@ -226,7 +226,7 @@ class DB_HANDLER {
     */ 
     async update(obj){
         return new Promise((resolve, reject) => {
-            console.log('Called DB_HANDLER:update()');
+            //console.log('Called DB_HANDLER:update()');
             if (typeof(obj) != 'object') reject('DB_HANDLER.update(): obj is not defined or is not type of object');
             // console.log('Called DB_HANDLER:update() Stage 2');
 
