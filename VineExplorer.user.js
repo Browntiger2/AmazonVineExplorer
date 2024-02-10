@@ -468,7 +468,7 @@ function createFavStarElement(prod, index = Math.round(Math.random()* 10000)) {
 }
 
 function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
-    console.log('Called createTaxInfo()');
+    //console.log('Called createTaxInfo()');
     let _currencySymbol = '';
     if (prod.data_tax_currency && prod.data_tax_currency == 'EUR') _currencySymbol = '€';
 
@@ -480,12 +480,12 @@ function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
     _taxElement_span.setAttribute("id", `ave-taxinfo-${index}-text`);
     _taxElement_span.classList.add('ave-taxinfo-text');
     const _prize = prod.data_estimated_tax_prize;
-    console.log('Called createTaxInfo(): We have a Taxprize of: ', _prize);
+    console.log('Called createTaxInfo(): We have a Tax of: ', _prize);
     _taxElement_span.innerText = `Tax Value: ${(typeof(_prize) == 'number') ? _prize :'--.--'} ${_currencySymbol}`;
-    console.log('createTaxInfo(): After innerText');
+    //console.log('createTaxInfo(): After innerText');
 
     _taxElement.appendChild(_taxElement_span);
-    console.log('createTaxInfo(): END', _taxElement);
+    //console.log('createTaxInfo(): END', _taxElement);
     return _taxElement;
 }
 
