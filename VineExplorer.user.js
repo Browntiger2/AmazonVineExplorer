@@ -1960,7 +1960,7 @@ function initBackgroundScan() {
                                     _promises.push(database.update(_newProd));
                                 });
                             }*/
-
+                            const _promises = [];
                             Promise.all(_promises).then(() => {
                                 _scanFinished();
                                 _subStage++;
