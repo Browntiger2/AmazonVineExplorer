@@ -2,14 +2,14 @@
 // @name         Amazon Vine Explorer
 // @namespace    http://tampermonkey.net/
 // @version      0.10.3.8
-// @updateURL    https://raw.githubusercontent.com/Amazon-Vine-Explorer/AmazonVineExplorer/main/VineExplorer.user.js
-// @downloadURL  https://raw.githubusercontent.com/Amazon-Vine-Explorer/AmazonVineExplorer/main/VineExplorer.user.js
+// @updateURL    https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/VineExplorer.user.js
+// @downloadURL  https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/VineExplorer.user.js
 // @description  Better View, Search and Explore for Amazon Vine Products - Vine Voices Edition
 // @author       MarkusSR1984, Christof121
 // @match        *://www.amazon.de/*
 // @match        *://www.amazon.com/*
 // @license      MIT
-// @icon         https://raw.githubusercontent.com/Amazon-Vine-Explorer/AmazonVineExplorer/main/vine_logo.png
+// @icon         https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/vine_logo.png
 // @run-at       document-start
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -17,26 +17,26 @@
 // @grant        GM.setValue
 // @grant        GM.xmlHttpRequest
 // @grant        unsafeWindow
-// @require      https://raw.githubusercontent.com/Amazon-Vine-Explorer/AmazonVineExplorer/main/globals.js
-// @require      https://raw.githubusercontent.com/Amazon-Vine-Explorer/AmazonVineExplorer/main/class_db_handler.js
-// @require      https://raw.githubusercontent.com/Amazon-Vine-Explorer/AmazonVineExplorer/main/class_product.js
+// @require      https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/globals.js
+// @require      https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/class_db_handler.js
+// @require      https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/class_product.js
 
 // ==/UserScript==
 
-/* 
-    Versioning: 
+/*
+    Versioning:
     a.b.c[.d]
 
-    a => Hauptversion(Major), ändert sich nur bei breaking oder anderen gravirenden änderungen. Solle In diesem Fall also die 1 nie überschreiten.
-    b => Feature(Minor), ändert sich nur wenn neue Features hinzukommen oder gößere umstellungen im Hintergrund passiert sind
-    c => Patch, kleinere Änderungen oder "größere" Bugfixes
-    d => Micro(OPTIONAL), kleine Bugfixes die nur wenige Zeilen Code beinhalten. Wird normalerweise nicht an die Versionnummer angehängt und nur in ausnahmefällen verwendet. Wie z.B. 0.6.4.1 - Das war nur eine Fehlerhafte Variablendeklaration. musste aber public gehen weil es ein Breaking Bug war
+    a => Major version, only changes in the event of breaking or other serious changes. In this case it should never exceed 1.
+    b => Feature (minor), only changes when new features are added or major changes have happened in the background
+    c => Patch, minor changes or "major" bug fixes
+    d => Micro(OPTIONAL), small bug fixes that only contain a few lines of code. Normally not appended to the version number and only used in exceptional cases.
 
     Sammlung der Ideen:
-    - Pageination nach oben schieben || Kopieren
-    - Tooltipp mit der langen Beschreibung auf der kurzen
-    - Bestellte Produkte mit Tag versehen ?
-    - Automatisches Bestellen via Prioliste ?!?
+    - Pagination move up || Copy
+    - Tool tip with the long description on the short one
+    - Tag ordered products?
+    - Automatic ordering via priority list?!?
 
     Todo:
     - Reload der Neue Produkte Seite nach einem Click auf "Alle als gesehen Markieren"
@@ -72,7 +72,7 @@ unsafeWindow.ave = {
 
 const database = new DB_HANDLER(DATABASE_NAME, DATABASE_OBJECT_STORE_NAME, DATABASE_VERSION, (res, err) => {
     if (err) {
-        console.error(`Somithing was going wrong while init database :'(`);
+        console.error(`Something went wrong while init database :'(`);
         return;
     } else {
         let _execLock = false;
@@ -168,7 +168,7 @@ function handleInfiniteScroll() {
         console.log(`handleInfiniteScroll(): _maxScrollHeight: ${_maxScrollHeight} window.scrollY+inner: ${window.scrollY + window.innerHeight}`);
 
         if (_maxScrollHeight > (window.scrollY + (window.innerHeight * 2))){
-            blockHandleInfiniteScroll = false;  
+            blockHandleInfiniteScroll = false;
             return;
         } else if (infiniteScrollTilesBufferArray.length < 1000 && infiniteScrollLastPreloadedPage < infiniteScrollMaxPreloadPage) {
             const _baseUrl = (/(http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}\/vine\/vine-items)/.exec(window.location.href))[1];
@@ -176,11 +176,11 @@ function handleInfiniteScroll() {
             getTilesFromURL(`${_baseUrl}?queue=encore&pn=&cn=&page=${infiniteScrollLastPreloadedPage}`, (tiles) =>{
                 infiniteScrollTilesBufferArray = infiniteScrollTilesBufferArray.concat(tiles);
 
-                blockHandleInfiniteScroll = false;  
+                blockHandleInfiniteScroll = false;
                 if (infiniteScrollTilesBufferArray.length < 500) handleInfiniteScroll();
             });
         } else {
-            blockHandleInfiniteScroll = false;  
+            blockHandleInfiniteScroll = false;
         }
     }
 }
@@ -313,13 +313,13 @@ function addLeftSideButtons(forceClean) {
 
     _nodesContainer.appendChild(document.createElement('p')); // A bit of Space above our Buttons
 
-    const _setAllSeenBtn = createButton('Aktuelle Seite als gesehen markieren','ave-btn-allseen',  `width: 240px; background-color: ${SETTINGS.BtnColorMarkCurrSiteAsSeen};`, () => {
+    const _setAllSeenBtn = createButton('Mark Current page as viewed','ave-btn-allseen',  `width: 240px; background-color: ${SETTINGS.BtnColorMarkCurrSiteAsSeen};`, () => {
 
         if (SETTINGS.DebugLevel > 10) console.log('Clicked All Seen Button');
         markAllCurrentSiteProductsAsSeen();
     });
 
-    const _setAllSeenDBBtn = createButton('Alle als gesehen markieren','ave-btn-db-allseen', `left: 0; width: 240px; background-color: ${SETTINGS.BtnColorMarkAllAsSeen};`, () => {
+    const _setAllSeenDBBtn = createButton('Mark all as seen','ave-btn-db-allseen', `left: 0; width: 240px; background-color: ${SETTINGS.BtnColorMarkAllAsSeen};`, () => {
 
         if (SETTINGS.DebugLevel > 10) console.log('Clicked All Seen Button');
         setTimeout(() => {
@@ -334,7 +334,7 @@ function addLeftSideButtons(forceClean) {
         }, 30);
     });
 
-    const _backToTopBtn = createButton('Zum Seitenanfang','ave-btn-backtotop',  `width: 240px; background-color: ${SETTINGS.BtnColorBackToTop};`, () => {
+    const _backToTopBtn = createButton('To the top','ave-btn-backtotop',  `width: 240px; background-color: ${SETTINGS.BtnColorBackToTop};`, () => {
 
         if (SETTINGS.DebugLevel > 10) console.log('Clicked back to Top Button');
         window.scrollTo(0, 0);
@@ -347,12 +347,12 @@ function addLeftSideButtons(forceClean) {
     _nodesContainer.appendChild(_setAllSeenDBBtn);
     _nodesContainer.appendChild(_backToTopBtn);
 
-    // const _clearDBBtn = createButton('Datenbank Bereinigen', 'background-color: orange;', () => {
+    // const _clearDBBtn = createButton('Clean Database', 'background-color: orange;', () => {
     //     if (SETTINGS.DebugLevel > 10) console.log('Clicked clear DB Button');
     //     cleanUpDatabase();
     // });
 
-    // _nodesContainer.appendChild(_clearDBBtn);
+    //_nodesContainer.appendChild(_clearDBBtn);
 }
 
 function markAllCurrentSiteProductsAsSeen(cb = () => {}) {
@@ -412,7 +412,7 @@ function createButton(text, id, style, clickHandler){
         if (clickHandler) {
             clickHandler(ev);
         } else {
-            alert('\r\nHier gibt es nix zu sehen.\r\nZumindest noch nicht :P');
+            alert('\r\nThere is nothing to see here.\r\nAt least not yet :P');
         }
     });
     return _btnSpan;
@@ -442,7 +442,7 @@ async function createTileFromProduct(product, btnID, cb) {
                 <span class="a-button a-button-primary vvp-details-btn" id="a-autoid-${_btnAutoID}">
                     <span class="a-button-inner">
                         <input data-asin="${product.data_asin}" data-is-parent-asin="${product.data_asin_is_parent}" data-recommendation-id="${product.data_recommendation_id}" data-recommendation-type="${product.data_recommendation_type}" class="a-button-input" type="submit" aria-labelledby="a-autoid-${_btnAutoID}-announce">
-                        <span class="a-button-text" aria-hidden="true" id="a-autoid-${_btnAutoID}-announce">Weitere Details</span>
+                        <span class="a-button-text" aria-hidden="true" id="a-autoid-${_btnAutoID}-announce">More Details</span>
                     </span>
                 </span>
             </div>
@@ -475,13 +475,13 @@ function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
     const _taxElement = document.createElement('span');
     _taxElement.setAttribute("id", `ave-taxinfo-${index}`);
     _taxElement.style.cssText = 'position: relative; transform: translate(0px, -30px); width: fit-content; right: 0px;';
-    
+
     const _taxElement_span = document.createElement('span');
     _taxElement_span.setAttribute("id", `ave-taxinfo-${index}-text`);
     _taxElement_span.classList.add('ave-taxinfo-text');
     const _prize = prod.data_estimated_tax_prize;
     console.log('Called createTaxInfo(): We have a Taxprize of: ', _prize);
-    _taxElement_span.innerText = `Tax Prize: ${(typeof(_prize) == 'number') ? _prize :'--.--'} ${_currencySymbol}`;
+    _taxElement_span.innerText = `Tax Value: ${(typeof(_prize) == 'number') ? _prize :'--.--'} ${_currencySymbol}`;
     console.log('createTaxInfo(): After innerText');
 
     _taxElement.appendChild(_taxElement_span);
@@ -535,7 +535,7 @@ async function createProductSite(siteType, productArray, cb) {
     // Edit Top Line
     if (_tilesContainer) {
         const _topLine = _tilesContainer.getElementsByTagName('p')[0];
-        _topLine.innerHTML = `<p>Anzeigen von <strong>${_fastCount}</strong> von <strong>${_productArrayLength}</strong> Ergebnissen</p>`
+        _topLine.innerHTML = `<p>View from <strong>${_fastCount}</strong> von <strong>${_productArrayLength}</strong> results</p>`
     }
 
     const _tilesGrid = document.getElementById('vvp-items-grid');
@@ -581,7 +581,7 @@ async function createInfiniteScrollSite(siteType, cb) {
 
         _contentContainer.appendChild(_tileStructure);
     };
-    
+
     // Cear Left Nodes Container
     const _nodesContainer = document.getElementById('vvp-browse-nodes-container');
     if (_nodesContainer) _nodesContainer.innerHTML = '';
@@ -750,7 +750,7 @@ function getTilesFromURL(url, cb = (tilesArray) => {}) {
         method: "GET",
         url: url,
         onload: function(response) {
-            const _parser = new DOMParser();   
+            const _parser = new DOMParser();
             const _doc = _parser.parseFromString(response.responseText, "text/html");
             lastGetTilesFromURLQuerry = Date.now();
             waitForHtmlElmement('#vvp-items-grid', (itemsContainer) => {
@@ -808,7 +808,7 @@ function favStarEventhandlerClick(event, data) {
 /**
  * Updates Style and Text of a Product Tile
  * @param {Product} prod
- * @returns 
+ * @returns
  */
 function updateTileStyle(prod) {
     if (SETTINGS.DebugLevel > 10) console.log(`Called updateTileStyle(${JSON.stringify(prod, null, 4)})`);
@@ -846,7 +846,7 @@ function initTileEventHandlers() {
         if (SETTINGS.DebugLevel > 10) console.log(`Adding Eventhandler to Tile ${i}`);
         const _currTile = _tiles[i];
         addTileEventhandlers(_currTile);
-    }        
+    }
 }
 
 function addTileEventhandlers(_currTile) {
@@ -911,7 +911,7 @@ function addBranding() {
 
     const _oldElem = document.getElementById('ave-branding-text');
     if (_oldElem) _oldElem.remove();
-    
+
     const _text = document.createElement('div');
     _text.id = 'ave-branding-text';
     _text.style.position = 'fixed';
@@ -939,7 +939,7 @@ function addAveSettingsTab(){
         _upperSettingsButton.id = 'vvp-ave-settings-tab';
         _upperSettingsButton.classList = 'a-tab-heading';
         _upperSettingsButton.role = 'presentation';
-        _upperSettingsButton.innerHTML += `<a role="tab" aria-selected="false" tabindex="-1">AVE Einstellungen</a>`;
+        _upperSettingsButton.innerHTML += `<a role="tab" aria-selected="false" tabindex="-1">AVE Settings</a>`;
 
         _upperSettingsButton.addEventListener('click',function(){
             const _upperButtons = document.body.querySelectorAll('.a-tab-container.vvp-tab-set-container > ul > li');
@@ -1224,7 +1224,7 @@ font-weight: bold;
 }
     </style>
 
-    <div id="ave-settings-header" style="margin-bottom: 10px"><h3>Einstellungen ${AVE_TITLE} - Version ${AVE_VERSION}</h3></div>
+    <div id="ave-settings-header" style="margin-bottom: 10px"><h3>Settings ${AVE_TITLE} - Version ${AVE_VERSION}</h3></div>
     <div id="ave-settings-container" class="ave-settings-container">
 
 
@@ -1319,7 +1319,7 @@ function createSettingsMenuElement(dat){
     } else if (dat.type == 'button') { // Number Value
 
         const _elem_item_left = document.createElement('div');
-        
+
         _elem_item_left.classList.add('ave-item-left');
 
 
@@ -1331,7 +1331,7 @@ function createSettingsMenuElement(dat){
         const _elem_item_left_input = document.createElement('button');
         _elem_item_left_input.type = 'button';
         _elem_item_left_input.className = 'ave-input-button';
-        
+
         // _elem_item_left_input.setAttribute('ave-data-key', dat.key);
         _elem_item_left_input.innerText = dat.name;
         //_elem_item_left_input.setAttribute('data-ave-tooltip',dat.description);
@@ -1539,9 +1539,9 @@ function colorToHex(color) {
     const _color = color.replace(/\s/g,''); // Remove all spaces
     let _cache;
 
-    if (_color == 'white'){ 
+    if (_color == 'white'){
         return '#ffffff';
-    } else if (_color == 'black'){ 
+    } else if (_color == 'black'){
         return '#000000';
     } else if (_cache = /rgb\(([\d]+),([\d]+),([\d]+)\)/.exec(_color)){ // rgb(0,0,0)
         return rgbToHex(_cache[1], _cache[2], _cache[3]);
@@ -1700,9 +1700,9 @@ function getPageinationData(localDocument = document) {
 async function cleanUpDatabase(cb = () => {}) {
     if (SETTINGS.DebugLevel > 10) console.log('Called cleanUpDatabase()');
     const _dbCleanIcon = addDBCleaningSymbol();
-    
+
     database.getAll().then((prodArr) => {
-        
+
         const _prodArrLength = prodArr.length;
         const _workersProms = [];
         if (SETTINGS.DebugLevel > 10) console.log(`cleanUpDatabase() - Checking ${_prodArrLength} Entrys`);
@@ -1737,14 +1737,14 @@ async function cleanUpDatabase(cb = () => {}) {
                     _notSeenCounter++;
                     if (SETTINGS.DebugLevel > 14) console.log(`cleanUpDatabase() - Entry ${_currEntry.id} increased notSeenCounter to ${_notSeenCounter}`);
                 }
-                
+
                 if (_currEntry.notSeenCounter != _notSeenCounter) {
                     if (SETTINGS.DebugLevel > 14) console.log(`cleanUpDatabase() - Entry ${_currEntry.id} update notSeenCounter from ${_currEntry.notSeenCounter} to ${_notSeenCounter}`);
                     _currEntry.notSeenCounter = _notSeenCounter;
                     _needUpdate = true;
                 }
 
-                
+
 
                 if ((_currEntry.notSeenCounter > SETTINGS.NotSeenMaxCount || _currEntry.forceRemove) && !_currEntry.isFav) {
                     if (SETTINGS.DebugLevel > 10) console.log(`cleanUpDatabase() - Removing Entry ${_currEntry.id}`);
@@ -1787,7 +1787,7 @@ function exportDatabase() {
 
         document.body.removeChild(element);
     })
-    
+
 }
 
 /**
@@ -1883,7 +1883,7 @@ function initBackgroundScan() {
         iframe.style.display = 'none';
         iframe.style.zIndex = '100';
         document.body.appendChild(iframe);
-    } 
+    }
 
     const _paginatinWaitLoop = setInterval(() => {
         const _pageinationData = getPageinationData(document.querySelector('#ave-iframe-backgroundloader').contentWindow.document);
@@ -1897,7 +1897,7 @@ function initBackgroundScan() {
                 localStorage.setItem('AVE_BACKGROUND_SCAN_IS_RUNNING', true);
                 localStorage.setItem('AVE_BACKGROUND_SCAN_PAGE_CURRENT', 1);
                 localStorage.setItem('AVE_BACKGROUND_SCAN_STAGE', 0);
-            } 
+            }
 
             let _loopIsWorking = false;
             let _subStage = 0;
@@ -1945,7 +1945,7 @@ function initBackgroundScan() {
                         database.getAll().then((products) => {
                             const _needUpdate = [];
                             const _randCount = Math.round(Math.random() * 4);
-                            for (const _prod of products) {
+                            /*for (const _prod of products) {
                                 if (_needUpdate.length < _randCount) {
                                     if (typeof(_prod.data_estimated_tax_prize) != 'number') _needUpdate.push(_prod);
                                 } else {
@@ -1959,7 +1959,7 @@ function initBackgroundScan() {
                                 requestProductDetails(_prod).then((_newProd) => {
                                     _promises.push(database.update(_newProd));
                                 });
-                            }
+                            }*/
 
                             Promise.all(_promises).then(() => {
                                 _scanFinished();
@@ -1995,10 +1995,10 @@ function initBackgroundScan() {
                     _loopIsWorking = false;
                     backGroundScanTimeout = setTimeout(initBackgroundScanSubFunctionScannerLoop, SETTINGS.BackGroundScanDelayPerPage + Math.round(Math.random() * SETTINGS.BackGroundScannerRandomness));
                 }
-            }            
+            }
         }
     }, 250);
-}   
+}
 
 function backGroundTileScanner(url, cb) {
     if (SETTINGS.DebugLevel > 10) console.log(`Called backgroundTileScanner(${url})`);
@@ -2022,7 +2022,7 @@ function backGroundTileScanner(url, cb) {
                         _returned++;
                         if (SETTINGS.DebugLevel > 14) console.log(`BACKGROUNDSCAN => Got TileData Back: Tile ${_returned}/${_tilesLength} =>`, prod);
                         if (!prod.gotFromDB) database.add(prod);
-                        
+
                     }))
                 }
 
@@ -2091,11 +2091,11 @@ function stickElementToTopScrollEVhandler(elemID, dist) {
     const _elem = document.getElementById(elemID);
     if (_elem) {
         const maxScrollHeight = Math.max(
-            document.body.scrollHeight - window.innerHeight, 
+            document.body.scrollHeight - window.innerHeight,
             document.documentElement.scrollHeight - window.innerHeight
         );
 
-        requestAnimationFrame(() => { 
+        requestAnimationFrame(() => {
             const _elemRect = _elem.getBoundingClientRect();
 
             const _elemInitialTop = parseInt(_elem.getAttribute('ave-data-default-top'));
@@ -2118,7 +2118,7 @@ let lastDesktopNotifikationTimestamp = 0;
 function updateNewProductsBtn() {
     if (AUTO_SCAN_IS_RUNNING) return;
     if (SETTINGS.DebugLevel > 1) console.log('Called updateNewProductsBtn()');
-    database.getNewEntries().then((prodArr) => { 
+    database.getNewEntries().then((prodArr) => {
         const _btnBadge = document.getElementById('ave-new-items-btn-badge');
         const _pageTitle = document.title.replace(/^[^\|]*\|/, '').trim();
         const _prodArrLength = prodArr.length;
@@ -2150,33 +2150,33 @@ function updateNewProductsBtn() {
                 const _configkeyWordsLength = _configKeyWords.length;
 
                 for (let j = 0; j < _configkeyWordsLength; j++) {
-                    const _currKey = _configKeyWords[j].toLowerCase(); 
+                    const _currKey = _configKeyWords[j].toLowerCase();
                     if (SETTINGS.DebugLevel > 1) console.log(`updateNewProductsBtn(): Search Product Deescription for Keyword: ${_currKey}`);
                     if (_descFull.includes(_currKey)) {
                         desktopNotifikation(`Amazon Vine Explorer - ${AVE_VERSION}`, _prod.description_full, _prod.data_img_url, true);
                         _notifyed = true;
-                    }                    
+                    }
                     break;
-                }        
+                }
             }
         }
-        if (SETTINGS.EnableDesktopNotifikation && !_notifyed && _prodArrLength > oldCountOfNewItems){ 
+        if (SETTINGS.EnableDesktopNotifikation && !_notifyed && _prodArrLength > oldCountOfNewItems){
                 if (unixTimeStamp() - lastDesktopNotifikationTimestamp >= SETTINGS.DesktopNotifikationDelay) {
                     oldCountOfNewItems = _prodArrLength;
                     lastDesktopNotifikationTimestamp = unixTimeStamp();
 
-                    desktopNotifikation(`Amazon Vine Explorer - ${AVE_VERSION}` , `Es wurden ${_prodArrLength} neue Vine Produkte gefunden`);
-               } 
+                    desktopNotifikation(`Amazon Vine Explorer - ${AVE_VERSION}` , `There are ${_prodArrLength} new Vine products`);
+               }
         }
     })
 }
 
 /**
  * Send a Desktop Notifikation
- * @param {string} title 
- * @param {string} message 
- * @param {string} icon 
- * 
+ * @param {string} title
+ * @param {string} message
+ * @param {string} icon
+ *
  */
 function desktopNotifikation(title, message, image = null, requireInteraction = null, onClick = () => {}) {
     const _vineLogo = 'https://raw.githubusercontent.com/Amazon-Vine-Explorer/AmazonVineExplorer/main/vine_logo.png';
@@ -2196,7 +2196,7 @@ function desktopNotifikation(title, message, image = null, requireInteraction = 
     } else {
         Notification.requestPermission().then(function(permission) {
             if (permission === 'granted') {
-                console.log('Berechtigung für Benachrichtigungen erhalten!');
+                console.log('Get Permissions for notifications!');
                 desktopNotifikation(title, message, icon, onclick);
             }
         });
@@ -2380,9 +2380,9 @@ function init(hasTiles) {
 
     const _searchbarContainer = document.getElementById('vvp-items-button-container');
 
-    _searchbarContainer.appendChild(createNavButton('ave-btn-favorites', 'Alle Produkte', '', SETTINGS.BtnColorAllProducts, () => {createNewSite(PAGETYPE.ALL);}));
-    _searchbarContainer.appendChild(createNavButton('ave-btn-favorites', 'Favoriten', '', SETTINGS.BtnColorFavorites, () => {createNewSite(PAGETYPE.FAVORITES);}));
-    _searchbarContainer.appendChild(createNavButton('ave-btn-list-new', 'Neue Einträge', 'ave-new-items-btn', SETTINGS.BtnColorNewProducts, () => {createNewSite(PAGETYPE.NEW_ITEMS);}, 'ave-new-items-btn-badge', '-'));
+    _searchbarContainer.appendChild(createNavButton('ave-btn-favorites', 'All Products', '', SETTINGS.BtnColorAllProducts, () => {createNewSite(PAGETYPE.ALL);}));
+    _searchbarContainer.appendChild(createNavButton('ave-btn-favorites', 'Favorite', '', SETTINGS.BtnColorFavorites, () => {createNewSite(PAGETYPE.FAVORITES);}));
+    _searchbarContainer.appendChild(createNavButton('ave-btn-list-new', 'New entries', 'ave-new-items-btn', SETTINGS.BtnColorNewProducts, () => {createNewSite(PAGETYPE.NEW_ITEMS);}, 'ave-new-items-btn-badge', '-'));
 
     updateNewProductsBtn();
 
@@ -2391,11 +2391,11 @@ function init(hasTiles) {
     const _searchBarSpan = document.createElement('span');
     _searchBarSpan.setAttribute('class', 'ave-search-container');
     _searchBarSpan.style.cssText = `margin: 0.5em;`;
-    // _searchBarSpan.innerHTML = `<input type="text" style="width: 30em;" placeholder="Suche Vine Produkte" name="ave-search">`;
+    // _searchBarSpan.innerHTML = `<input type="text" style="width: 30em;" placeholder="Search Vine Products" name="ave-search">`;
 
     const _searchBarInput = document.createElement('input');
     _searchBarInput.setAttribute('type', 'search');
-    _searchBarInput.setAttribute('placeholder', 'Suche Vine Produkte');
+    _searchBarInput.setAttribute('placeholder', 'Search Vine Products');
     _searchBarInput.setAttribute('name', 'ave-search');
     _searchBarInput.style.cssText = `width: 30em;`;
     _searchBarInput.addEventListener('keyup', (ev) => {
@@ -2408,7 +2408,7 @@ function init(hasTiles) {
                     if (SETTINGS.DebugLevel > 10) console.log(`Found ${_objArr.length} Items with this Search`);
                     createNewSite(PAGETYPE.SEARCH_RESULT, _objArr);
                     searchInputTimeout = null;
-                }) 
+                })
             }, 250);
         }
     });
@@ -2448,7 +2448,7 @@ function init(hasTiles) {
 
         const _btn_a = document.createElement('a');
         _btn_a.setAttribute('style', 'background-color: lime');
-        _btn_a.innerHTML = 'Alle als gesehen markieren und Nächste<span class="a-letter-space"></span><span class="a-letter-space"></span><span class="larr">→</span>';
+        _btn_a.innerHTML = 'Mark all as seen and Next<span class="a-letter-space"></span><span class="a-letter-space"></span><span class="larr">→</span>';
 
         _btn.appendChild(_btn_a);
         _pageinationContainer.appendChild(_btn);
