@@ -2015,12 +2015,12 @@ function backGroundTileScanner(url, cb) {
     ave.backGroundIFrame = _iframeDoc;
     _iframeDoc.location.href = url;
     const _loopDelay = setInterval(() => {
-        if (SETTINGS.DebugLevel > 10) console.log(`backgroundTileScanner(): check if we have tiles to read...`);
+        if (SETTINGS.DebugLevel > 15) console.log(`backgroundTileScanner(): check if we have tiles to read...`);
         const _tiles =_iframeDoc.querySelectorAll('.vvp-item-tile');
         if (_tiles) {
-            if (SETTINGS.DebugLevel > 10) console.log(`backgroundTileScanner(): Found first Tile`);
+            if (SETTINGS.DebugLevel > 15) console.log(`backgroundTileScanner(): Found first Tile`);
             const _tilesLength = _tiles.length;
-            if (SETTINGS.DebugLevel > 10) console.log(`BackgroundsScan Querryd: ${url} and got ${_tilesLength} Tiles`);
+            if (SETTINGS.DebugLevel > 15) console.log(`BackgroundsScan Querryd: ${url} and got ${_tilesLength} Tiles`);
             clearInterval(_loopDelay);
             if (_tilesLength > 0) {
                 let _returned = 0;
@@ -2109,7 +2109,7 @@ function stickElementToTopScrollEVhandler(elemID, dist) {
             const _elemInitialTop = parseInt(_elem.getAttribute('ave-data-default-top'));
             if (!_elemInitialTop) {_elem.setAttribute('ave-data-default-top', (window.scrollY + _elemRect.top)); return;}
 
-            if (SETTINGS.DebugLevel > 10) console.log(`### scrollY:${window.scrollY} maxScrollHeigt ${maxScrollHeight} initialTop: ${_elemInitialTop}`);
+            if (SETTINGS.DebugLevel > 15) console.log(`### scrollY:${window.scrollY} maxScrollHeigt ${maxScrollHeight} initialTop: ${_elemInitialTop}`);
 
             if (window.scrollY >= (_elemInitialTop - parseInt(dist))) {
                 _elem.style.position = "fixed";
@@ -2125,12 +2125,12 @@ let lastDesktopNotifikationTimestamp = 0;
 
 function updateNewProductsBtn() {
     if (AUTO_SCAN_IS_RUNNING) return;
-    if (SETTINGS.DebugLevel > 1) console.log('Called updateNewProductsBtn()');
+    if (SETTINGS.DebugLevel > 15) console.log('Called updateNewProductsBtn()');
     database.getNewEntries().then((prodArr) => {
         const _btnBadge = document.getElementById('ave-new-items-btn-badge');
         const _pageTitle = document.title.replace(/^[^\|]*\|/, '').trim();
         const _prodArrLength = prodArr.length;
-        if (SETTINGS.DebugLevel > 1) console.log(`updateNewProductsBtn(): Got Database Response: ${_prodArrLength} New Items`);
+        if (SETTINGS.DebugLevel > 15) console.log(`updateNewProductsBtn(): Got Database Response: ${_prodArrLength} New Items`);
 
         if (_prodArrLength > 0) {
             _btnBadge.style.display = 'inline-block';
@@ -2145,7 +2145,7 @@ function updateNewProductsBtn() {
         let _notifyed = false;
         if (SETTINGS.EnableDesktopNotifikation && SETTINGS.DesktopNotifikationKeywords?.length > 0) {
 
-            if (SETTINGS.DebugLevel > 1) console.log(`updateNewProductsBtn(): Insige IF`);
+            if (SETTINGS.DebugLevel > 15) console.log(`updateNewProductsBtn(): Insige IF`);
 
             const _configKeyWords = SETTINGS.DesktopNotifikationKeywords;
 
