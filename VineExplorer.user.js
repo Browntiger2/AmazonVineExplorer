@@ -2295,15 +2295,13 @@ async function requestProductDetails(prod) {
                 prod.data_childs = _data.variations || [];
                 const _promArray = new Array();
                 prod.data_estimated_tax_prize = prod.data_estimated_tax_prize || 0;
-                for (_child of prod.data_childs) {
+                //for (_child of prod.data_childs) {
+                var _child = prod.data_childs[0];
                     _promArray.push(fetch(`${window.location.origin}/vine/api/recommendations/${(prod.id).replace(/#/g, '%23')}/item/${_child.asin}`.replace(/#/g, '%23')).then(r => r.json()).then((childData) => {
-                        console.log('CHILD_DATA:', childData);
+                        //console.log('CHILD_DATA:', childData);
                         if (!childData.error) {
-
                             // Copy over all returned datapoints od child asin
-                            for (_datapoint of Object.keys(childData.result)) {
-                                _child[_datapoint] = childData.result[_datapoint];
-                            }
+                            Object.assign(_child, childData.result);
 
                             if (prod.data_estimated_tax_prize < _child.taxValue) {
                                 prod.data_estimated_tax_prize = _child.taxValue;
@@ -2311,7 +2309,7 @@ async function requestProductDetails(prod) {
                             }
                         }
                     }))
-                }
+                //}
                 Promise.all(_promArray).then((values) => {
                     console.log('All fetches returned: ', values);
                     resolve(prod);
