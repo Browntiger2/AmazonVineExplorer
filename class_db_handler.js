@@ -166,11 +166,11 @@ class DB_HANDLER {
             if (typeof(obj) != 'object') reject('DB_HANDLER.add(): obj is not defined or is not type of object');
 
             //Dupes of ASNs are happening
-            const _request = this.#getStore(true).put(obj);
+            const _request = this.#getStore(true).add(obj);
 
             _request.onerror = (event) => {
                 if (`${event.target.error}`.includes('data_asin')) {
-                    console.error('Tryed to ADD New Product with existing ASIN ???', obj);
+                    console.error('Tried to ADD New Product with existing ASIN ???', obj);
                     // reject(event.target.error);
                     // return;
                 }
