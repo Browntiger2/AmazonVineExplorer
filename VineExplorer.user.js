@@ -658,7 +658,7 @@ const PAGETYPE = {
 
 function clearPriorPO() {
     const _poContainer = document.getElementById('vvp-generic-order-success-msg');
-    _poContainer.parent().remove ();
+    if (_poContainer) _poContainer.parent().remove ();
 }
 
 function createNewSite(type, data) {
