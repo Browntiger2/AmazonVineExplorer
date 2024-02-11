@@ -1948,25 +1948,27 @@ function initBackgroundScan() {
                     }
                     case 2: {   // qerry about other values (tax, real prize, ....) ~ 20 - 30 Products then loopover to stage 1
                         if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan().loop.case.2 with _subStage: ', _subStage);
-                        database.getAll().then((products) => {
+                        const _randCount = Math.round(Math.random() * 4);
+                        var remainingCapacity = _randCount;
+                        //First Resolve NewEntries, Favorites, All if nothing else to do 
+                        database.getNewEntries().then((products) => {
                             const _needUpdate = [];
-                            const _randCount = Math.round(Math.random() * 4);
-                            /*for (const _prod of products) {
+                            for (const _prod of products) {
                                 if (_needUpdate.length < _randCount) {
                                     if (typeof(_prod.data_estimated_tax_prize) != 'number') _needUpdate.push(_prod);
                                 } else {
                                     break;
                                 }
                             }
-
                             const _promises = [];
-
+                            remainingCapacity = _randCount - _needUpdate.length;
+                            
                             for (const _prod of _needUpdate) {
                                 requestProductDetails(_prod).then((_newProd) => {
                                     _promises.push(database.update(_newProd));
                                 });
-                            }*/
-                            const _promises = [];
+                            }
+                            
                             Promise.all(_promises).then(() => {
                                 _scanFinished();
                                 _subStage++;
