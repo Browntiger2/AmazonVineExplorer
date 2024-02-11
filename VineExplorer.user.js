@@ -210,7 +210,7 @@ function detectCurrentPageType(){
 
 async function parseTileData(tile) {
     return new Promise((resolve, reject) => {
-                if (SETTINGS.DebugLevel > 5) console.log(`Called parseTileData(`, tile, ')');
+                if (SETTINGS.DebugLevel > 15) console.log(`Called parseTileData(`, tile, ')');
 
         const _id = tile.getAttribute('data-recommendation-id');
 
