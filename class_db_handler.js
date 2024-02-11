@@ -166,6 +166,7 @@ class DB_HANDLER {
             if (typeof(obj) != 'object') reject('DB_HANDLER.add(): obj is not defined or is not type of object');
 
             //Dupes of ASNs are happening
+            console.log('Adding Object: ', obj );
             const _request = this.#getStore(true).add(obj);
 
             _request.onerror = (event) => {
