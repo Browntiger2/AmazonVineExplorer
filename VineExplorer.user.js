@@ -849,7 +849,7 @@ function initTileEventHandlers() {
     const _tileLength = _tiles.length;
 
     for(let i = 0; i < _tileLength; i++) {
-        if (SETTINGS.DebugLevel > 10) console.log(`Adding Eventhandler to Tile ${i}`);
+        if (SETTINGS.DebugLevel > 15) console.log(`Adding Eventhandler to Tile ${i}`);
         const _currTile = _tiles[i];
         addTileEventhandlers(_currTile);
     }
