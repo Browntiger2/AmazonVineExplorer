@@ -172,10 +172,11 @@ class DB_HANDLER {
                 if (`${event.target.error}`.includes('data_asin')) {
                     console.error('Tried to ADD New Product with existing ASIN ???', obj);
                     // reject(event.target.error);
-                    // return;
+                    // database.add does nothing with the promise why waste resources
+                    resolve();
                 }
-
-                reject(`DB_HANDLER.add(): ${event.target.error}`);
+                else
+                    reject(`DB_HANDLER.add(): ${event.target.error}`);
             };
             
             _request.onsuccess = (event) => {
