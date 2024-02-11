@@ -120,7 +120,7 @@ let showDbUpdateLogoTimeout = null;
 let showDbUpdateLogoIcon = null;
 
 ave_eventhandler.on('ave-database-changed', () => {
-    console.warn('EVENT - Database has new Data for us! we should look what has changed');
+    console.warn('EVENT - New Database Data');
     updateNewProductsBtn();
 
     if (showDbUpdateLogoTimeout) clearTimeout(showDbUpdateLogoTimeout);
