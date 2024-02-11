@@ -2293,7 +2293,6 @@ async function requestProductDetails(prod) {
                     }
                 }
                 const _data = res.result;
-                console.log('DATA:', _data)
                 prod.data_childs = _data.variations || [];
                 const _promArray = new Array();
                 prod.data_estimated_tax_prize = prod.data_estimated_tax_prize || 0;
