@@ -218,7 +218,7 @@ async function parseTileData(tile) {
             if (_ret) {
                 _ret.gotFromDB = true;
                 // Too many db writes, don't send newdata event when updating last seen the timestamp
-                if ( !_ret.ts_lastSeen || (_ret.ts_lastSeen < (unixTimeStamp() -  SECONDS_PER_DAY))) {
+                if ( _ret.ts_lastSeen < (unixTimeStamp() -  SECONDS_PER_DAY)) {
                     _ret.ts_lastSeen = unixTimeStamp();
                     database.update(_ret);
                 }
@@ -1703,9 +1703,14 @@ function getPageinationData(localDocument = document) {
 }
 
 
+let lastCleanupTimestamp = 0;
 
 // CleanUp and Fix Database Entrys
 async function cleanUpDatabase(cb = () => {}) {
+    //We may choose to clean only once per day
+    if (unixTimeStamp() - lastCleanupTimestamp < SETTINGS.DatabaseCleanupDelay)
+        return;
+    lastCleanupTimestamp = unixTimeStamp();
     if (SETTINGS.DebugLevel > 10) console.log('Called cleanUpDatabase()');
     const _dbCleanIcon = addDBCleaningSymbol();
 
