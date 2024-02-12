@@ -164,9 +164,6 @@ class DB_HANDLER {
     async add(obj) {
         return new Promise((resolve, reject) => {
             if (typeof(obj) != 'object') reject('DB_HANDLER.add(): obj is not defined or is not type of object');
-
-            obj.ts_lastSeen = unixTimeStamp();
-            obj.ts_firstSeen = unixTimeStamp();
             console.log('Adding Object: ', obj );
             const _request = this.#getStore(true).add(obj);
 
