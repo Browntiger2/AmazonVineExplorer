@@ -217,9 +217,11 @@ async function parseTileData(tile) {
         database.get(_id).then((_ret) => {
             if (_ret) {
                 _ret.gotFromDB = true;
-                _ret.ts_lastSeen = unixTimeStamp();
-                if (SETTINGS.DebugLevel > 14) console.log(`parseTileData(): got DB Entry`);
-                database.update(_ret);
+                // Too many db writes, don't send newdata event when updating last seen the timestamp
+                if ( !_ret.ts_lastSeen || (_ret.ts_lastSeen < (unixTimeStamp() -  SECONDS_PER_DAY))) {
+                    _ret.ts_lastSeen = unixTimeStamp();
+                    database.update(_ret);
+                }
                 resolve(_ret);
             } else {
                 //We have to wait for a lot of Stuff
