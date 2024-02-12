@@ -140,6 +140,7 @@ SETTINGS_USERCONFIG_DEFINES.push({key: 'DesktopNotifikationKeywords', type: 'key
 SETTINGS_USERCONFIG_DEFINES.push({key: 'BackGroundScanDelayPerPage', type: 'number', min: 2000, max: 10000, name: 'Background Scan Per Page Min Delay(Milliseconds)', description: 'Minimal Delay per Page load of Background Scan'});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'BackGroundScannerRandomness', type: 'number', min: 100, max: 10000, name: 'Background Scan Randomness per Page(Milliseconds)', description: 'A Vale that gives the maximal range for the Randomy added delay per page load'});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'DesktopNotifikationDelay', type: 'number', min: 1, max: 900, name: 'Desktop Notifikation Delay(Seconds)', description: 'Minimal Time between Desktop Notifikations. exept Notifikations with hitted keywords'});
+SETTINGS_USERCONFIG_DEFINES.push({key: 'DatabaseCleanupDelay', type: 'number', min: 1, max: 86400, name: 'Database Cleanup Delay(Seconds)', description: 'Minimal Time between two database cleanups'});
 
 SETTINGS_USERCONFIG_DEFINES.push({type: 'title', name: 'Colors and Styles', description: ''});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'BtnColorNewProducts', type: 'color', name: 'Button Color New Products', description: ''});
@@ -199,6 +200,7 @@ class SETTINGS_DEFAULT {
     BackGroundScanDelayPerPage = 4000;
     BackGroundScannerRandomness = 4000;
     DesktopNotifikationDelay = 60;
+    DatabaseCleanupDelay = SECONDS_PER_DAY;
     DesktopNotifikationKeywords = [];
 
     CssProductNewTag = "border: 2mm ridge rgba(218, 247, 166, .6); background-color: rgba(218, 247, 166, .2)";
