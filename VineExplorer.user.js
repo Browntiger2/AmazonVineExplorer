@@ -72,7 +72,7 @@ unsafeWindow.ave = {
 
 const database = new DB_HANDLER(DATABASE_NAME, DATABASE_OBJECT_STORE_NAME, DATABASE_VERSION, (res, err) => {
     if (err) {
-        console.error(`Something went wrong while init database :'(`);
+        console.log('Something went wrong while init database :', err);
         return;
     } else {
         let _execLock = false;
@@ -151,6 +151,14 @@ let infiniteScrollMaxPreloadPage = 125; // Hardcoded for scrolltest, must lated 
 let inifiniteScrollBlockAppend = false;
 let infiniteScrollTilesBufferArray = [];
 
+function formatTax(prod) {
+    if (prod.data_tax_currency == 'USD')
+        return prod.data_estimated_tax_prize.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    if (prod.data_tax_currency == 'EUR')
+        return prod.data_estimated_tax_prize.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+     return prod.data_estimated_tax_prize;
+}
+
 function handleInfiniteScroll() {
     console.log('Called handleInfiniteScroll()');
     if (!inifiniteScrollBlockAppend) {
@@ -218,9 +226,9 @@ async function parseTileData(tile) {
             if (_ret) {
                 _ret.gotFromDB = true;
                 // Too many db writes, don't send newdata event when updating last seen the timestamp
-                if ( _ret.ts_lastSeen < (unixTimeStamp() -  SECONDS_PER_DAY)) {
+                if (!_ret.ts_lastSeen || _ret.ts_lastSeen < (unixTimeStamp() -  2*SECONDS_PER_DAY)) {
                     _ret.ts_lastSeen = unixTimeStamp();
-                    database.update(_ret);
+                    database.update(_ret, false);
                 }
                 resolve(_ret);
             } else {
@@ -444,7 +452,7 @@ async function createTileFromProduct(product, btnID, cb) {
                 <span class="a-button a-button-primary vvp-details-btn" id="a-autoid-${_btnAutoID}">
                     <span class="a-button-inner">
                         <input data-asin="${product.data_asin}" data-is-parent-asin="${product.data_asin_is_parent}" data-recommendation-id="${product.data_recommendation_id}" data-recommendation-type="${product.data_recommendation_type}" class="a-button-input" type="submit" aria-labelledby="a-autoid-${_btnAutoID}-announce">
-                        <span class="a-button-text" aria-hidden="true" id="a-autoid-${_btnAutoID}-announce">More Details</span>
+                        <span class="a-button-text" aria-hidden="true" id="a-autoid-${_btnAutoID}-announce">See Details</span>
                     </span>
                 </span>
             </div>
@@ -471,9 +479,7 @@ function createFavStarElement(prod, index = Math.round(Math.random()* 10000)) {
 
 function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
     //console.log('Called createTaxInfo()');
-    let _currencySymbol = '';
-    if (prod.data_tax_currency && prod.data_tax_currency == 'EUR') _currencySymbol = '€';
-
+  
     const _taxElement = document.createElement('span');
     _taxElement.setAttribute("id", `ave-taxinfo-${index}`);
     _taxElement.style.cssText = 'position: relative; transform: translate(0px, -30px); width: fit-content; right: 0px;';
@@ -481,13 +487,9 @@ function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
     const _taxElement_span = document.createElement('span');
     _taxElement_span.setAttribute("id", `ave-taxinfo-${index}-text`);
     _taxElement_span.classList.add('ave-taxinfo-text');
-    const _prize = prod.data_estimated_tax_prize;
-    console.log('Called createTaxInfo(): We have a Tax of: ', _prize);
-    _taxElement_span.innerText = `Tax Value: ${(typeof(_prize) == 'number') ? _prize :'--.--'} ${_currencySymbol}`;
-    //console.log('createTaxInfo(): After innerText');
-
+    const _prize = formatTax(prod);
+    _taxElement_span.innerText = `Tax Value: ${(typeof(_prize) == 'number' || typeof(_taxValue) == 'string') ? _prize :'--.--'}`;
     _taxElement.appendChild(_taxElement_span);
-    //console.log('createTaxInfo(): END', _taxElement);
     return _taxElement;
 }
 
@@ -608,7 +610,7 @@ async function createInfiniteScrollSite(siteType, cb) {
 
 async function appendInfiniteScrollTiles(cb = ()=>{}){
     // So lange tiles hinzufügen bis wir wieder über dem sichtbaren bereich sind
-    console.log('appendInfiniteScrollTiles(): ', infiniteScrollTilesBufferArray);
+    //console.log('appendInfiniteScrollTiles(): ', infiniteScrollTilesBufferArray);
     const _tilesContainer = document.getElementById('vvp-items-grid');
 
     // setTimeout(async () => {
@@ -658,9 +660,14 @@ const PAGETYPE = {
     ORIGINAL_SELLER: 102
 }
 
+let nothingToResolve = false;
+
 function clearPriorPO() {
+    nothingToResolve = false;
     const _poContainer = document.getElementById('vvp-generic-order-success-msg');
-    if (_poContainer) _poContainer.remove ();
+    //if (_poContainer) _poContainer.remove();
+    const _errorCont = document.getElementById('vvp-generic-request-error-msg');
+       _errorCont.classList.add ('aok-hidden');
 }
 
 function createNewSite(type, data) {
@@ -834,8 +841,8 @@ function updateTileStyle(prod) {
             const _favStar = _tile.querySelector('.ave-favorite-star');
             _favStar.style.color = (prod.isFav) ? SETTINGS.FavStarColorChecked : 'white'; // SETTINGS.FavStarColorChecked = Gelb;
 
-            const _taxValue = prod.data_estimated_tax_prize;
-            if (typeof(_taxValue) == 'number') {
+            const _taxValue = formatTax(prod);
+            if (typeof(_taxValue) == 'number' || typeof(_taxValue) == 'string') {
                 const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
                 _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--', _taxValue);
             }
@@ -990,7 +997,7 @@ function addAVESettingsMenu(){
 
         _boxContainer.appendChild(_contentContainer);
         _tabContainer.appendChild(_boxContainer);
-        console.log(_tabContainer);
+        //console.log(_tabContainer);
 
         _contentContainer.innerHTML = `
     <style>
@@ -1702,17 +1709,19 @@ function getPageinationData(localDocument = document) {
     return _ret;
 }
 
-
-let lastCleanupTimestamp = 0;
+async function restartSearch(cb = () => {}) {
+    localStorage.setItem('AVE_BACKGROUND_SCAN_PAGE_CURRENT', 0);
+    cb(true);
+}
 
 // CleanUp and Fix Database Entrys
 async function cleanUpDatabase(cb = () => {}) {
-    //We may choose to clean only once per day
-    if (unixTimeStamp() - lastCleanupTimestamp < SETTINGS.DatabaseCleanupDelay)
-        return;
-    lastCleanupTimestamp = unixTimeStamp();
+
     if (SETTINGS.DebugLevel > 10) console.log('Called cleanUpDatabase()');
     const _dbCleanIcon = addDBCleaningSymbol();
+
+    lastCleanupTimestamp = unixTimeStamp();
+    localStorage.setItem('AVE_LAST_CLEANUP', lastCleanupTimestamp);
 
     database.getAll().then((prodArr) => {
 
@@ -1722,7 +1731,7 @@ async function cleanUpDatabase(cb = () => {}) {
 
         let _updated = 0;
         let _deleted = 0;
-
+        let _updTimestamp = (unixTimeStamp() - SECONDS_PER_DAY);
         for (const _currEntry of prodArr) {
             _workersProms.push(new Promise((resolve, reject) => {
                 let _needUpdate = false;
@@ -1743,10 +1752,10 @@ async function cleanUpDatabase(cb = () => {}) {
 
 
                 let _notSeenCounter = _currEntry.notSeenCounter;
-                if (_currEntry.data_recommendation_type == 'VENDOR_TARGETED' &&  _currEntry.ts_lastSeen < (unixTimeStamp() - SECONDS_PER_DAY)) { // If PotLuck start revoving after 1 day
+                if (_currEntry.data_recommendation_type == 'VENDOR_TARGETED' &&  _currEntry.ts_lastSeen < _updTimestamp) { // If PotLuck start revoving after 1 day
                     _notSeenCounter++;
                     if (SETTINGS.DebugLevel > 14) console.log(`cleanUpDatabase() - Entry ${_currEntry.id} increased notSeenCounter to ${_notSeenCounter}`);
-                } else if (_currEntry.ts_lastSeen < (unixTimeStamp() - SECONDS_PER_WEEK)) { // Normal Product Start Removing after 1 week
+                } else if (_currEntry.ts_lastSeen < _updTimestamp) { // Normal Product Start Removing after 1 week
                     _notSeenCounter++;
                     if (SETTINGS.DebugLevel > 14) console.log(`cleanUpDatabase() - Entry ${_currEntry.id} increased notSeenCounter to ${_notSeenCounter}`);
                 }
@@ -1769,6 +1778,7 @@ async function cleanUpDatabase(cb = () => {}) {
                 } else if (!_needUpdate){
                     resolve()
                 } else {
+                    console.log('cleanUpDatabase update');
                     database.update(_currEntry).then((ret) => {_updated++; resolve();});
                 }
             }))
@@ -1871,10 +1881,56 @@ function readFile(file) {
         reader.readAsText(file);
     });
 }
+// We would like to know what is user is looking at and see if we can resolve that
+function resolveProducts() {
+    if (nothingToResolve) return;
 
+    const _tiles = document.getElementsByClassName('vvp-item-tile');
+    const _tilesLength = _tiles.length;
 
+    const _itemsToResolve = Math.round(Math.random() * 2);
+    let _itemsResolved = 0;
+    for (let i = 0; i < _tilesLength; i++) {
+        const _tile = _tiles[i];
+        const _selTax = _tiles[i].querySelector('.ave-taxinfo-text');
+        if (_selTax) {
+	    const tax = _selTax.innerText;
+        if (tax.includes('--.--')  ) {
+            const _id = _tile.getAttribute('data-recommendation-id');
+            _itemsResolved++;
+            if (_itemsResolved == _itemsToResolve+1) return;
+        database.get(_id).then((prod) => {
+            requestProductDetails(prod).then((_newProd) => {
+                const _taxValue = formatTax(_newProd); //_newProd.data_estimated_tax_prize;
+                if (typeof(_taxValue) != 'undefined' && typeof(_taxValue) != 'null') {
+                    database.update(_newProd || prod, false).then( () => {
+                        updateTileStyle(_newProd || prod);
+                    });
+                } else {
+                    const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
+                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--',' ');
+                }
+            }).catch(function(error) {
+                const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
+                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--', ' ');
+            })
+        })
+        }
+      }
+    }
+    nothingToResolve = true;
+}
+
+var probability = function(n) {
+     return !!n && Math.random() <= n;
+};
+
+let lastCleanupTimestamp = 0;
+let lastScanTimestamp = 0;
 
 function initBackgroundScan() {
+    lastCleanupTimestamp = localStorage.getItem('AVE_LAST_CLEANUP');
+    if (!lastCleanupTimestamp) lastCleanupTimestamp = unixTimeStamp();
     if (SETTINGS.DebugLevel > 10) console.log('Called initBackgroundScan()');
     if  (BackGroundScanIsRunning) {console.warn('initBackgroundScan(): Backgroundscan is already running => Exit');return;}
     if  (!SETTINGS.EnableBackgroundScan) {console.warn('initBackgroundScan(): Backgroundscan is disabled => Exit');return;}
@@ -1912,6 +1968,13 @@ function initBackgroundScan() {
                 localStorage.setItem('AVE_BACKGROUND_SCAN_STAGE', 0);
             }
 
+            let lastRun = localStorage.getItem('AVE_BACKGROUND_SCAN_LAST');
+            if (lastRun == '' || lastRun + SECONDS_PER_HOUR < unixTimeStamp() ) {
+                if (SETTINGS.DebugLevel >= 5) console.log('initBackgroundScan(): Restarting scan from page 0');
+                localStorage.setItem('AVE_BACKGROUND_SCAN_LAST', unixTimeStamp());
+                localStorage.setItem('AVE_BACKGROUND_SCAN_STAGE', 0);
+            }
+
             let _loopIsWorking = false;
             let _subStage = 0;
             const _stageZeroSites = ['queue=potluck', 'queue=last_chance']
@@ -1922,7 +1985,7 @@ function initBackgroundScan() {
                 _loopIsWorking = true;
 
                 let _backGroundScanStage = parseInt(localStorage.getItem('AVE_BACKGROUND_SCAN_STAGE')) || 0;
-                if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan(): loop with _backgroundScanStage ', _backGroundScanStage, ' and Substage: ', _subStage);
+                if (SETTINGS.DebugLevel >= 5) console.log('Scan ', _backGroundScanStage, ' and Pg: ', _subStage);
 
                 switch (_backGroundScanStage) {
                     case 0:{    // potluck, last_chance
@@ -1930,6 +1993,7 @@ function initBackgroundScan() {
                         if (_stageZeroSites[_subStage]) {
                             if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan().loop.case.0 with _subStage: ', _subStage, ' inside IF');
                             backGroundTileScanner(`${_baseUrl}?${_stageZeroSites[_subStage]}` , (elm) => {_scanFinished()});
+                            if(probability(0.25)) resolveProducts();
                             _subStage++
                         } else {
                             if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan().loop.case.0 with _subStage: ', _subStage, ' inside ELSE');
@@ -1941,9 +2005,11 @@ function initBackgroundScan() {
                     }
                     case 1: {   // queue=encore | queue=encore&pn=&cn=&page=2...x
                         _subStage = parseInt(localStorage.getItem('AVE_BACKGROUND_SCAN_PAGE_CURRENT'));
-                        if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan().loop.case.1 with _subStage: ', _subStage);
+                        if ( _subStage < 0 ) _subStage = 0;
+                        if (SETTINGS.DebugLevel > 15) console.log('Scan Ph1: ', _subStage);
                         if (_subStage < (parseInt(localStorage.getItem('AVE_BACKGROUND_SCAN_PAGE_MAX')) || 0)) {
-                            backGroundTileScanner(`${_baseUrl}?queue=encore&pn=&cn=&page=${_subStage + 1}` , () => {_scanFinished()});
+                            backGroundTileScanner(`${_baseUrl}?queue=encore&pn=&cn=&page=${(_subStage > 0 ?_subStage + 1 : '')}` , () => {_scanFinished()});
+                            if(probability(0.25)) resolveProducts();
                             _subStage++
                             localStorage.setItem('AVE_BACKGROUND_SCAN_PAGE_CURRENT', _subStage);
                         } else {
@@ -1953,53 +2019,19 @@ function initBackgroundScan() {
                         }
                         break;
                     }
-                    case 2: {   // qerry about other values (tax, real prize, ....) ~ 20 - 30 Products then loopover to stage 1
-                        if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan().loop.case.2 with _subStage: ', _subStage);
-                        const _randCount = Math.round(Math.random() * 4);
-                        var remainingCapacity = _randCount;
-                        //First Resolve NewEntries, Favorites, All if nothing else to do 
-                        database.getNewEntries().then((products) => {
-                            const _needUpdate = [];
-                            for (const _prod of products) {
-                                if (_needUpdate.length < _randCount) {
-                                    if (typeof(_prod.data_estimated_tax_prize) != 'number') _needUpdate.push(_prod);
-                                } else {
-                                    break;
-                                }
-                            }
-                            const _promises = [];
-                            remainingCapacity = _randCount - _needUpdate.length;
-                            
-                            for (const _prod of _needUpdate) {
-                                requestProductDetails(_prod).then((_newProd) => {
-                                    _promises.push(database.update(_newProd));
-                                });
-                            }
-                            
-                            Promise.all(_promises).then(() => {
-                                _scanFinished();
-                                _subStage++;
-                            }).catch(() => {
-                                console.error('There was an error while updating an product in database');
-                                _scanFinished();
-                                _subStage++;
-                            });
-                        });
-
-                        if (_subStage++ >= 10)
-                        {
-                            _subStage = 0;
-                            _backGroundScanStage++;
-                            _scanFinished();
-                        }
-                        break;
-                    }
+                    //case 2 Removed. Don't like anything about this phase 2 scanner. In the USA one may have to wait 1600 pages to resolve few tax values.
                     default: {
-                        cleanUpDatabase(() => {
+                        if (unixTimeStamp() - lastCleanupTimestamp >= SETTINGS.DatabaseCleanupDelay) {
+                           cleanUpDatabase(() => {
+                               _backGroundScanStage = 0;
+                               _subStage = 0;
+                               _scanFinished();
+                            })
+                        } else {
                             _backGroundScanStage = 0;
                             _subStage = 0;
                             _scanFinished();
-                        })
+                        }
                         //clearInterval(backGroundScanTimeout);
                     }
                 }
@@ -2007,6 +2039,7 @@ function initBackgroundScan() {
                     if (SETTINGS.DebugLevel > 10) console.log(`initBackgroundScan()._scanFinished()`);
                     localStorage.setItem('AVE_BACKGROUND_SCAN_STAGE', _backGroundScanStage);
                     localStorage.setItem('AVE_BACKGROUND_SCAN_PAGE_CURRENT', _subStage);
+                    localStorage.setItem('AVE_BACKGROUND_SCAN_LAST', unixTimeStamp());
                     _loopIsWorking = false;
                     backGroundScanTimeout = setTimeout(initBackgroundScanSubFunctionScannerLoop, SETTINGS.BackGroundScanDelayPerPage + Math.round(Math.random() * SETTINGS.BackGroundScannerRandomness));
                 }
@@ -2072,7 +2105,11 @@ function startAutoScan() {
     })
 }
 
-
+function _autoscanCompleted() {
+    localStorage.setItem('AVE_AUTO_SCAN_IS_RUNNING', false);
+    localStorage.setItem('AVE_AUTO_SCAN_PAGE_MAX', -1);
+    localStorage.setItem('AVE_AUTO_SCAN_PAGE_CURRENT', -1);
+}
 
 function handleAutoScan() {
     let _href;
@@ -2085,18 +2122,23 @@ function handleAutoScan() {
             window.location.href = window.location.href.replace(/=[0-9]+/, `=${_nextPage}`);
         }, _delay);
     } else { // We are done ;)
-        updateAutoScanScreenText('Success, cleaning up Database...');
-        cleanUpDatabase(()=> {
-            localStorage.setItem('AVE_AUTO_SCAN_IS_RUNNING', false);
-            localStorage.setItem('AVE_AUTO_SCAN_PAGE_MAX', -1);
-            localStorage.setItem('AVE_AUTO_SCAN_PAGE_CURRENT', -1);
+        if (unixTimeStamp() - lastCleanupTimestamp >= SETTINGS.DatabaseCleanupDelay){
+          updateAutoScanScreenText('Success, cleaning up Database...');
+          cleanUpDatabase(()=> {
+            autoscanCompleted();
             setTimeout(() => {
                 updateAutoScanScreenText('Finished Database\nupdate and cleanup\n\nPage reloading incoming... please wait');
                 setTimeout(()=> {
                     window.location.href = window.location.href.replace(/=[0-9]+/, '=1');
                 }, 10000);
             }, _delay + 2000);
-        });
+          });
+        } else {
+            _autoscanCompleted();
+            setTimeout(()=> {
+                window.location.href = window.location.href.replace(/=[0-9]+/, '=1');
+            }, 10000);
+        }
     }
 }
 
@@ -2281,8 +2323,7 @@ function addStyleToTile(_currTile, _product) {
     // insertHtmlElementAfter((_currTile.getElementsByClassName('vvp-item-product-title-container')[0]), createTaxInfoElement(_product));
     waitForHtmlElmement('.vvp-item-product-title-container', (_elem) => {
         insertHtmlElementAfter(_elem, createTaxInfoElement(_product));
-    }, _currTile)
-
+    }, _currTile); 
 }
 
 
@@ -2300,7 +2341,10 @@ async function requestProductDetails(prod) {
                     }
                 }
                 const _data = res.result;
-                prod.data_childs = _data.variations || [];
+                if(_data && _data.hasOwnProperty('variations'))
+                prod.data_childs = _data.variations; //|| []
+                else
+                    prod.data_childs =[];
                 const _promArray = new Array();
                 prod.data_estimated_tax_prize = prod.data_estimated_tax_prize || 0;
                 //for (_child of prod.data_childs) {
@@ -2319,13 +2363,12 @@ async function requestProductDetails(prod) {
                     }))
                 //}
                 Promise.all(_promArray).then((values) => {
-                    console.log('All fetches returned: ', values);
                     resolve(prod);
                 });
             })
         } else {
             fetch(`${window.location.origin}/vine/api/recommendations/${prod.id}/item/${prod.data_asin}`.replace(/#/g, '%23')).then(r => r.json()).then(ret => {
-                console.log('RETURN:', ret);
+                //console.log('RETURN:', ret);
                 if (ret.error) {
                     reject(ret.error.exceptionType) // => "ITEM_NOT_IN_ENROLLMENT"
                 } else {
@@ -2466,5 +2509,3 @@ function init(hasTiles) {
         _pageinationContainer.appendChild(_btn);
     }
 }
-
-
