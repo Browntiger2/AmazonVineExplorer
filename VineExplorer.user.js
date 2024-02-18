@@ -488,7 +488,9 @@ function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
     _taxElement_span.setAttribute("id", `ave-taxinfo-${index}-text`);
     _taxElement_span.classList.add('ave-taxinfo-text');
     const _prize = formatTax(prod);
-    _taxElement_span.innerText = `Tax Value: ${(typeof(_prize) == 'number' || typeof(_taxValue) == 'string') ? _prize :'--.--'}`;
+    if(['number','string'].includes(typeof(_prize)))
+     _taxElement_span.innerText = `Tax Value: ${_prize}`;
+    else _taxElement_span.innerText = '--.--';
     _taxElement.appendChild(_taxElement_span);
     return _taxElement;
 }
