@@ -1,14 +1,14 @@
 # Amazon Vine Explorer
 
-Private fork of https://github.com/Amazon-Vine-Explorer/AmazonVineExplorer__
-browntiger @ gmail__
+Private fork of https://github.com/Amazon-Vine-Explorer/AmazonVineExplorer<br />
+browntiger @ gmail<br />
 
-Following improvement were added:__
-1: Tax resolver - fully functional, resolves visible items taxes. Not all taxes for 35000 items. __
-2: Removed pointless cleanup database every 20 minutes.__
-3: Added probability tax resolver.__
-4: Added #database.update(false) to stop terrorizing indexedDb.__
-5: Generate the correct first page url for scanning.__
-6: Added national tax formatter.__
-7: Added reset scanner from page one *if* it was offline for an hour.__
-8: Corrected the syntax error when opening IndexedDb.__
+Following improvement were added:<br />
+1: Tax resolver - fully functional, resolves visible items taxes. Not all taxes for 35000 items. <br />
+2: Removed pointless cleanup database every 20 minutes.<br />
+3: Added probability tax resolver.<br />
+4: Added #database.update(false) to stop terrorizing indexedDb.<br />
+5: Generate the correct first page url for scanning.<br />
+6: Added national tax formatter.<br />
+7: Added reset scanner from page one *if* it was offline for an hour.<br />
+8: Corrected the syntax error when opening IndexedDb.<br />
