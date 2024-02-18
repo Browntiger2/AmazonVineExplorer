@@ -164,7 +164,7 @@ class DB_HANDLER {
     async add(obj) {
         return new Promise((resolve, reject) => {
             if (typeof(obj) != 'object') reject('DB_HANDLER.add(): obj is not defined or is not type of object');
-            console.log('Adding Object: ', obj );
+            console.log('Adding Object: ', obj.description_short );
             const _request = this.#getStore(true).add(obj);
 
             _request.onerror = (event) => {
@@ -224,7 +224,7 @@ class DB_HANDLER {
     * @param {object} obj Object to update
     * @returns {Promise<void>}
     */ 
-    async update(obj){
+    async update(obj, bFireUpdate = true){
         return new Promise((resolve, reject) => {
             //console.log('Called DB_HANDLER:update()');
             if (typeof(obj) != 'object') reject('DB_HANDLER.update(): obj is not defined or is not type of object');
@@ -239,6 +239,7 @@ class DB_HANDLER {
 
             _request.onsuccess = (event) => {
                 // console.log('Called DB_HANDLER:update() --> success');
+                if ( bFireUpdate )
                 this.#fireDataChangedEvent();
                 resolve();
             }
