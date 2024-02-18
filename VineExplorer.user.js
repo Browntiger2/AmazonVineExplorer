@@ -1888,7 +1888,7 @@ function resolveProducts() {
     const _tiles = document.getElementsByClassName('vvp-item-tile');
     const _tilesLength = _tiles.length;
 
-    const _itemsToResolve = Math.round(Math.random() * 2);
+    const _itemsToResolve = 1;
     let _itemsResolved = 0;
     for (let i = 0; i < _tilesLength; i++) {
         const _tile = _tiles[i];
