@@ -4,6 +4,7 @@ if (window.top != window.self) return; //don't run on frames or iframes
 // Constants Needed for some things
 const AVE_VERSION = (GM_info?.script?.version)
 const AVE_TITLE = (GM_info?.script?.name);
+const SECONDS_PER_HOUR = 3600;
 const SECONDS_PER_DAY = 86400;
 const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7;
 const SITE_IS_VINE = /http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}\/vine\//.test(window.location.href);
