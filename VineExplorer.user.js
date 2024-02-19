@@ -478,8 +478,6 @@ function createFavStarElement(prod, index = Math.round(Math.random()* 10000)) {
 }
 
 function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
-    //console.log('Called createTaxInfo()');
-  
     const _taxElement = document.createElement('span');
     _taxElement.setAttribute("id", `ave-taxinfo-${index}`);
     _taxElement.style.cssText = 'position: relative; transform: translate(0px, -30px); width: fit-content; right: 0px;';
@@ -490,7 +488,7 @@ function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
     const _prize = formatTax(prod);
     if(['number','string'].includes(typeof(_prize)))
      _taxElement_span.innerText = `Tax Value: ${_prize}`;
-    else _taxElement_span.innerText = '--.--';
+    else _taxElement_span.innerText = 'Tax Value: --.--';
     _taxElement.appendChild(_taxElement_span);
     return _taxElement;
 }
@@ -667,7 +665,7 @@ let nothingToResolve = false;
 function clearPriorPO() {
     nothingToResolve = false;
     const _poContainer = document.getElementById('vvp-generic-order-success-msg');
-    //if (_poContainer) _poContainer.remove();
+    if (_poContainer) _poContainer.remove();
     const _errorCont = document.getElementById('vvp-generic-request-error-msg');
        _errorCont.classList.add ('aok-hidden');
 }
@@ -844,7 +842,7 @@ function updateTileStyle(prod) {
             _favStar.style.color = (prod.isFav) ? SETTINGS.FavStarColorChecked : 'white'; // SETTINGS.FavStarColorChecked = Gelb;
 
             const _taxValue = formatTax(prod);
-            if (typeof(_taxValue) == 'number' || typeof(_taxValue) == 'string') {
+            if (['number','string'].includes(typeof _taxValue)) {
                 const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
                 _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--', _taxValue);
             }
@@ -1904,17 +1902,17 @@ function resolveProducts() {
         database.get(_id).then((prod) => {
             requestProductDetails(prod).then((_newProd) => {
                 const _taxValue = formatTax(_newProd); //_newProd.data_estimated_tax_prize;
-                if (typeof(_taxValue) != 'undefined' && typeof(_taxValue) != 'null') {
+                if (['number','string'].includes(typeof _taxValue)) {
                     database.update(_newProd || prod, false).then( () => {
                         updateTileStyle(_newProd || prod);
                     });
                 } else {
                     const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
-                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--',' ');
+                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--','(no longer availble)');
                 }
             }).catch(function(error) {
                 const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
-                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--', ' ');
+                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--', '(no longer availble)');
             })
         })
         }
@@ -1995,7 +1993,7 @@ function initBackgroundScan() {
                         if (_stageZeroSites[_subStage]) {
                             if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan().loop.case.0 with _subStage: ', _subStage, ' inside IF');
                             backGroundTileScanner(`${_baseUrl}?${_stageZeroSites[_subStage]}` , (elm) => {_scanFinished()});
-                            if(probability(0.25)) resolveProducts();
+                            if(probability(0.35)) resolveProducts();
                             _subStage++
                         } else {
                             if (SETTINGS.DebugLevel > 10) console.log('initBackgroundScan().loop.case.0 with _subStage: ', _subStage, ' inside ELSE');
@@ -2011,7 +2009,7 @@ function initBackgroundScan() {
                         if (SETTINGS.DebugLevel > 15) console.log('Scan Ph1: ', _subStage);
                         if (_subStage < (parseInt(localStorage.getItem('AVE_BACKGROUND_SCAN_PAGE_MAX')) || 0)) {
                             backGroundTileScanner(`${_baseUrl}?queue=encore&pn=&cn=&page=${(_subStage > 0 ?_subStage + 1 : '')}` , () => {_scanFinished()});
-                            if(probability(0.25)) resolveProducts();
+                            if(probability(0.35)) resolveProducts();
                             _subStage++
                             localStorage.setItem('AVE_BACKGROUND_SCAN_PAGE_CURRENT', _subStage);
                         } else {
@@ -2354,13 +2352,9 @@ async function requestProductDetails(prod) {
                     _promArray.push(fetch(`${window.location.origin}/vine/api/recommendations/${(prod.id).replace(/#/g, '%23')}/item/${_child.asin}`.replace(/#/g, '%23')).then(r => r.json()).then((childData) => {
                         //console.log('CHILD_DATA:', childData);
                         if (!childData.error) {
-                            // Copy over all returned datapoints od child asin
-                            Object.assign(_child, childData.result);
-
-                            if (prod.data_estimated_tax_prize < _child.taxValue) {
-                                prod.data_estimated_tax_prize = _child.taxValue;
-                                prod.data_tax_currency = _child.taxCurrency;
-                            }
+                            prod.data_estimated_tax_prize = childData.result.taxValue;
+                            prod.data_tax_currency = childData.result.taxCurrency;
+                            // Don't care about largest tax value
                         }
                     }))
                 //}
