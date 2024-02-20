@@ -1904,15 +1904,14 @@ function resolveProducts() {
                 const _taxValue = formatTax(_newProd); //_newProd.data_estimated_tax_prize;
                 if (['number','string'].includes(typeof _taxValue)) {
                     database.update(_newProd || prod, false).then( () => {
-                        updateTileStyle(_newProd || prod);
+                        _selTax.innerText = (_selTax.innerText).replace('--.--', _taxValue);
                     });
                 } else {
-                    const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
-                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--','(no longer availble)');
+                    _selTax.innerText = (_selTax.innerText).replace('--.--','(no longer availble)');
                 }
             }).catch(function(error) {
                 const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
-                    _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--', '(no longer availble)');
+                    _selTax.innerText = (_selTax.innerText).replace('--.--', '(no longer availble)');
             })
         })
         }
