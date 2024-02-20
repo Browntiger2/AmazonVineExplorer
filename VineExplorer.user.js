@@ -1910,7 +1910,6 @@ function resolveProducts() {
                     _selTax.innerText = (_selTax.innerText).replace('--.--','(no longer availble)');
                 }
             }).catch(function(error) {
-                const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
                     _selTax.innerText = (_selTax.innerText).replace('--.--', '(no longer availble)');
             })
         })
