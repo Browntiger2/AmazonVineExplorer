@@ -64,6 +64,7 @@ class DB_HANDLER {
                     if (!_db.objectStoreNames.contains(_storeName)) {
                         if (SETTINGS.DebugLevel > 10) console.log('Database needs to be created...');
                         const _storeOS = _db.createObjectStore(_storeName, { keyPath: 'id' });
+                        // our searches will be much faster if we index and store true or null (null is not valid key)
                         // _storeOS.createIndex('isNew', 'isNew', { unique: false });
                         // _storeOS.createIndex('isFav', 'isFav', { unique: false });
                         _storeOS.createIndex('data_asin', 'data_asin', { unique: true });
@@ -92,6 +93,9 @@ class DB_HANDLER {
                             }
                             case 3: {
                                 //  _store.createIndex('data_asin', 'data_asin');
+                                // data_asin is not really unique like parent to child items
+                                _storeOS.deleteIndex('data_asin')
+                                _storeOS.createIndex('data_asin', 'data_asin', { unique: false });
                                 break;
                             }
                             default: {
