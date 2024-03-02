@@ -4,7 +4,7 @@ if (window.top != window.self) return; //don't run on frames or iframes
 // Constants Needed for some things
 const AVE_VERSION = (GM_info?.script?.version)
 const AVE_TITLE = (GM_info?.script?.name);
-const SECONDS_PER_HOUR = 3600;
+const SECONDS_BEFORE_RESET = 600;
 const SECONDS_PER_DAY = 86400;
 const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7;
 const SITE_IS_VINE = /http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}\/vine\//.test(window.location.href);
@@ -26,7 +26,7 @@ const PAGE_LOAD_TIMESTAMP = Date.now();
 // Obsolete sobald die Datenbank über Tampermonkey läuft
 const DATABASE_NAME = 'VineVoiceExplorer';
 const DATABASE_OBJECT_STORE_NAME = `${DATABASE_NAME}_Objects`;
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 class AVE_EVENTHANDLER {
     
@@ -138,6 +138,7 @@ SETTINGS_USERCONFIG_DEFINES.push({key: 'EnableBackgroundScan', type: 'bool', nam
 SETTINGS_USERCONFIG_DEFINES.push({key: 'EnableInfiniteScrollLiveQuerry', type: 'bool', name: 'Enable Infiniti Scroll Live Querry', description: 'If enabled the Products of the All Products Page will get querryd from Amazon directls otherwise they will get loaded from Database(faster)'});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'EnableDesktopNotifikation', type: 'bool', name: 'Enable Desktop Notifications', description: 'Enable Desktop Notifications if new Products are detected'});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'DesktopNotifikationKeywords', type: 'keywords', name: 'Desktop Notifickation Highlight Keywords', inputPlaceholder: 'Type in your highlight keyword and press [ENTER]', description: 'Create a List of words u want to Highlight if Product desciption containes one or more of them'});
+SETTINGS_USERCONFIG_DEFINES.push({key: 'AutoFilterKeywords', type: 'keywords', name: 'Auto Filter Results Keywords', inputPlaceholder: 'Type in your autofilter keyword and press [ENTER]', description: 'Create a List of words u want to filter them'});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'BackGroundScanDelayPerPage', type: 'number', min: 2000, max: 10000, name: 'Background Scan Per Page Min Delay(Milliseconds)', description: 'Minimal Delay per Page load of Background Scan'});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'BackGroundScannerRandomness', type: 'number', min: 100, max: 10000, name: 'Background Scan Randomness per Page(Milliseconds)', description: 'A Vale that gives the maximal range for the Randomy added delay per page load'});
 SETTINGS_USERCONFIG_DEFINES.push({key: 'DesktopNotifikationDelay', type: 'number', min: 1, max: 900, name: 'Desktop Notifikation Delay(Seconds)', description: 'Minimal Time between Desktop Notifikations. exept Notifikations with hitted keywords'});
@@ -203,6 +204,7 @@ class SETTINGS_DEFAULT {
     DesktopNotifikationDelay = 60;
     DatabaseCleanupDelay = SECONDS_PER_DAY;
     DesktopNotifikationKeywords = [];
+    AutoFilterKeywords = [];
 
     CssProductNewTag = "border: 2mm ridge rgba(218, 247, 166, .6); background-color: rgba(218, 247, 166, .2)";
     CssProductSaved = "border: 2mm ridge rgba(105, 163, 0, .6); background-color: rgba(105, 163, 0, .2)";
@@ -242,14 +244,14 @@ const SETTINGS = new SETTINGS_DEFAULT();
   */ 
 function loadSettings() {
     const _settingsStore = GM_getValue('AVE_SETTINGS', {});
-    console.log('Got Settings from GM:(', typeof(_settingsStore),')', _settingsStore);
+    //console.log('Got Settings from GM:(', typeof(_settingsStore),')', _settingsStore);
     if (typeof(_settingsStore) == 'object' && _settingsStore != null && _settingsStore != undefined) {
         const _keys = Object.keys(_settingsStore);
         const _keysLength = _keys.length;
 
         for (let i = 0; i < _keysLength; i++) {
             const _currKey = _keys[i];
-            console.log(`Restore Setting: ${_currKey} with Value: ${_settingsStore[_currKey]}`)
+            //console.log(`Restore Setting: ${_currKey} with Value: ${_settingsStore[_currKey]}`)
             SETTINGS[_currKey] = _settingsStore[_currKey];
         }
     }
