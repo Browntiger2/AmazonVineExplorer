@@ -140,8 +140,7 @@ window.onscroll = () => { // ONSCROLL Event handler
     stickElementToTopScrollEVhandler('ave-btn-allseen', '5px');
     stickElementToTopScrollEVhandler('ave-btn-db-allseen', '40px');
     stickElementToTopScrollEVhandler('ave-btn-backtotop', '75px');
-    stickElementToTopScrollEVhandler('ave-btn-restartSearch', '110px');
-
+ 
     if (currentMainPage == PAGETYPE.ALL) handleInfiniteScroll();
 
 
@@ -270,15 +269,6 @@ async function parseTileData(tile) {
 
                                         _newProduct.description_short = _div_vvp_item_product_title_container_a.getElementsByClassName('a-truncate-cut')[0].textContent;
 
-                                        const _configFilterWords = SETTINGS.AutoFilterKeywords;
-                                        const _configFilterLength = _configFilterWords.length;
-                                        for (let j = 0; j < _configFilterLength; j++) {
-                                            if(_newProduct.description_full.toLowerCase().includes(_configFilterWords[j].toLowerCase())){
-                                                //console.error('REJECTED', _newProduct.description_short);
-                                                _newProduct.isNew = null;
-                                                break;
-                                            }
-                                        }
                                         if (_newProduct.description_short == '') {
                                             if (SETTINGS.DebugLevel > 14) console.log(`parseTileData(): we don´t have a shot description`);
                                             let _timeLoopCounter = 0;
@@ -364,10 +354,7 @@ function addLeftSideButtons(forceClean) {
         window.scrollTo(0, 0);
     });
 
-    const _restartBtn = createButton('Restart Scan From Page 1', 'ave-btn-restartSearch', 'width: 240px; background-color: orange;', () => {
-         if (SETTINGS.DebugLevel > 10) console.log('Clicked Restart search');
-            restartSearch();
-    });
+    
 
     _nodesContainer.appendChild(_setAllSeenBtn);
     _nodesContainer.appendChild(_setAllSeenDBBtn);
@@ -375,7 +362,7 @@ function addLeftSideButtons(forceClean) {
 
     //_nodesContainer.appendChild('<div id="gmSomeID"><p>Some paragraph</p></div>');
 
-    _nodesContainer.appendChild(_restartBtn);
+    
 
     // const _clearDBBtn = createButton('Clean Database', 'ave-btn-cleandb', 'background-color: orange;', () => {
     //     if (SETTINGS.DebugLevel > 10) console.log('Clicked clear DB Button');
