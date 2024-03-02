@@ -19,8 +19,8 @@ class Product {
     data_limited_quantity;
     data_catalogSize;
     real_prize;
-    isFav = false;
-    isNew = true;
+    isFav = null;
+    isNew = 'true';
     gotRemoved = false;
     ts_firstSeen = unixTimeStamp();
     ts_lastSeen = unixTimeStamp();
