@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Amazon Vine Explorer
 // @namespace    http://tampermonkey.net/
-// @version      0.10.3.8
+// @version      0.10.8.1
 // @updateURL    https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/VineExplorer.user.js
 // @downloadURL  https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/VineExplorer.user.js
 // @description  Better View, Search and Explore for Amazon Vine Products - Vine Voices Edition
@@ -15,6 +15,7 @@
 // @grant        GM_setValue
 // @grant        GM.getValue
 // @grant        GM.setValue
+
 // @grant        GM.xmlHttpRequest
 // @grant        unsafeWindow
 // @require      https://raw.githubusercontent.com/Browntiger2/AmazonVineExplorer/main/globals.js
@@ -139,6 +140,7 @@ window.onscroll = () => { // ONSCROLL Event handler
     stickElementToTopScrollEVhandler('ave-btn-allseen', '5px');
     stickElementToTopScrollEVhandler('ave-btn-db-allseen', '40px');
     stickElementToTopScrollEVhandler('ave-btn-backtotop', '75px');
+    stickElementToTopScrollEVhandler('ave-btn-restartSearch', '110px');
 
     if (currentMainPage == PAGETYPE.ALL) handleInfiniteScroll();
 
@@ -152,15 +154,19 @@ let inifiniteScrollBlockAppend = false;
 let infiniteScrollTilesBufferArray = [];
 
 function formatTax(prod) {
-    if (prod.data_tax_currency == 'USD')
+    if (prod.data_tax_currency == 'USD'){
         return prod.data_estimated_tax_prize.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-    if (prod.data_tax_currency == 'EUR')
-        return prod.data_estimated_tax_prize.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+    }
+    if (prod.data_tax_currency == 'EUR'){
+        return prod.data_estimated_tax_prze.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+    }
      return prod.data_estimated_tax_prize;
 }
 
+const cTaxValue = 'Tax Value: ';
+
 function handleInfiniteScroll() {
-    console.log('Called handleInfiniteScroll()');
+    //console.log('Called handleInfiniteScroll()');
     if (!inifiniteScrollBlockAppend) {
         inifiniteScrollBlockAppend = true;
         // setTimeout(async ()=> {},10);
@@ -173,13 +179,13 @@ function handleInfiniteScroll() {
 
         const _maxScrollHeight = Math.max(document.body.scrollHeight - window.innerHeight, document.documentElement.scrollHeight - window.innerHeight);
 
-        console.log(`handleInfiniteScroll(): _maxScrollHeight: ${_maxScrollHeight} window.scrollY+inner: ${window.scrollY + window.innerHeight}`);
+        //console.log(`handleInfiniteScroll(): _maxScrollHeight: ${_maxScrollHeight} window.scrollY+inner: ${window.scrollY + window.innerHeight}`);
 
         if (_maxScrollHeight > (window.scrollY + (window.innerHeight * 2))){
             blockHandleInfiniteScroll = false;
             return;
         } else if (infiniteScrollTilesBufferArray.length < 1000 && infiniteScrollLastPreloadedPage < infiniteScrollMaxPreloadPage) {
-            const _baseUrl = (/(http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}\/vine\/vine-items)/.exec(window.location.href))[1];
+            const _baseUrl = (/(http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}.{0,1}[a-z]{0,}\/vine\/vine-items)/.exec(window.location.href))[1];
             infiniteScrollLastPreloadedPage++;
             getTilesFromURL(`${_baseUrl}?queue=encore&pn=&cn=&page=${infiniteScrollLastPreloadedPage}`, (tiles) =>{
                 infiniteScrollTilesBufferArray = infiniteScrollTilesBufferArray.concat(tiles);
@@ -200,7 +206,7 @@ function getUrlParameter(name) {
 }
 
 function detectCurrentPageType(){
-    if (/http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}\/vine\/vine-items$/.test(window.location.href)) {
+    if (/http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}.{0,1}[a-z]{0,}\/vine\/vine-items$/.test(window.location.href)) {
         currentMainPage = PAGETYPE.ORIGINAL_LAST_CHANCE;
     } else if (getUrlParameter('queue') == 'last_chance') {
         currentMainPage = PAGETYPE.ORIGINAL_LAST_CHANCE;
@@ -226,7 +232,7 @@ async function parseTileData(tile) {
             if (_ret) {
                 _ret.gotFromDB = true;
                 // Too many db writes, don't send newdata event when updating last seen the timestamp
-                if (!_ret.ts_lastSeen || _ret.ts_lastSeen < (unixTimeStamp() -  2*SECONDS_PER_DAY)) {
+                if (!_ret.ts_lastSeen || _ret.ts_lastSeen < (unixTimeStamp() - 2*SECONDS_PER_DAY)) {
                     _ret.ts_lastSeen = unixTimeStamp();
                     database.update(_ret, false);
                 }
@@ -264,7 +270,15 @@ async function parseTileData(tile) {
 
                                         _newProduct.description_short = _div_vvp_item_product_title_container_a.getElementsByClassName('a-truncate-cut')[0].textContent;
 
-
+                                        const _configFilterWords = SETTINGS.AutoFilterKeywords;
+                                        const _configFilterLength = _configFilterWords.length;
+                                        for (let j = 0; j < _configFilterLength; j++) {
+                                            if(_newProduct.description_full.toLowerCase().includes(_configFilterWords[j].toLowerCase())){
+                                                //console.error('REJECTED', _newProduct.description_short);
+                                                _newProduct.isNew = null;
+                                                break;
+                                            }
+                                        }
                                         if (_newProduct.description_short == '') {
                                             if (SETTINGS.DebugLevel > 14) console.log(`parseTileData(): we don´t have a shot description`);
                                             let _timeLoopCounter = 0;
@@ -337,7 +351,7 @@ function addLeftSideButtons(forceClean) {
                 const _prodsArryLength = prodsArr.length;
                 for (let i = 0; i < _prodsArryLength; i++) {
                     const _currProd = prodsArr[i];
-                    _currProd.isNew = false;
+                    _currProd.isNew = null;
                     database.update(_currProd);
                 }
             })
@@ -350,19 +364,28 @@ function addLeftSideButtons(forceClean) {
         window.scrollTo(0, 0);
     });
 
-
-
+    const _restartBtn = createButton('Restart Scan From Page 1', 'ave-btn-restartSearch', 'width: 240px; background-color: orange;', () => {
+         if (SETTINGS.DebugLevel > 10) console.log('Clicked Restart search');
+            restartSearch();
+    });
 
     _nodesContainer.appendChild(_setAllSeenBtn);
     _nodesContainer.appendChild(_setAllSeenDBBtn);
     _nodesContainer.appendChild(_backToTopBtn);
 
-    // const _clearDBBtn = createButton('Clean Database', 'background-color: orange;', () => {
+    //_nodesContainer.appendChild('<div id="gmSomeID"><p>Some paragraph</p></div>');
+
+    _nodesContainer.appendChild(_restartBtn);
+
+    // const _clearDBBtn = createButton('Clean Database', 'ave-btn-cleandb', 'background-color: orange;', () => {
     //     if (SETTINGS.DebugLevel > 10) console.log('Clicked clear DB Button');
     //     cleanUpDatabase();
     // });
 
     //_nodesContainer.appendChild(_clearDBBtn);
+    //
+    
+     
 }
 
 function markAllCurrentSiteProductsAsSeen(cb = () => {}) {
@@ -374,7 +397,7 @@ function markAllCurrentSiteProductsAsSeen(cb = () => {}) {
         const _tile = _tiles[i];
         const _id = _tile.getAttribute('data-recommendation-id');
         database.get(_id).then((prod) => {
-            prod.isNew = false;
+            prod.isNew = null;
             database.update(prod).then( () => {
                 updateTileStyle(prod);
                 _returned++;
@@ -396,7 +419,7 @@ function markAllCurrentDatabaseProductsAsSeen(cb = () => {}) {
         }
         for (let i = 0; i < _prodsLength; i++) {
             const _currProd = prods[i];
-            _currProd.isNew = false;
+            _currProd.isNew = null;
             database.update(_currProd, ()=> {
                 if (SETTINGS.DebugLevel > 10) console.log(`markAllCurrentDatabaseProductsAsSeen() - Updated ${_currProd.id}`);
                 _returned++
@@ -437,7 +460,7 @@ async function createTileFromProduct(product, btnID, cb) {
         _tile.setAttribute('class', 'vvp-item-tile');
         _tile.setAttribute('data-recommendation-id', product.data_recommendation_id);
         _tile.setAttribute('data-img-url', product.data_img_url);
-        _tile.setAttribute('style', (product.notSeenCounter > 0) ? SETTINGS.CssProductRemovalTag : (product.isFav) ? SETTINGS.CssProductNewTag : (product.isNew) ? SETTINGS.CssProductNewTag : SETTINGS.CssProductDefault);
+        _tile.setAttribute('style', (product.notSeenCounter > 0) ? SETTINGS.CssProductRemovalTag : (product.isFav == 'true') ? SETTINGS.CssProductNewTag : (product.isNew == 'true') ? SETTINGS.CssProductNewTag : SETTINGS.CssProductDefault);
         _tile.innerHTML =`
             <div class="vvp-item-tile-content">
                 <img alt="${product.data_img_alt}" src="${product.data_img_url}">
@@ -473,7 +496,7 @@ function createFavStarElement(prod, index = Math.round(Math.random()* 10000)) {
     _favElement.classList.add('ave-favorite-star');
     _favElement.style.cssText = SETTINGS.CssProductFavStar();
     _favElement.textContent = '★';
-    if (prod.isFav) _favElement.style.color = SETTINGS.FavStarColorChecked; // SETTINGS.FavStarColorChecked = Gelb;
+    if (prod.isFav == 'true') _favElement.style.color = SETTINGS.FavStarColorChecked; // SETTINGS.FavStarColorChecked = Gelb;
     return _favElement;
 }
 
@@ -487,8 +510,8 @@ function createTaxInfoElement(prod, index = Math.round(Math.random()* 10000)) {
     _taxElement_span.classList.add('ave-taxinfo-text');
     const _prize = formatTax(prod);
     if(['number','string'].includes(typeof(_prize)))
-     _taxElement_span.innerText = `Tax Value: ${_prize}`;
-    else _taxElement_span.innerText = 'Tax Value: --.--';
+     _taxElement_span.innerText = cTaxValue + _prize;
+    else _taxElement_span.innerText = cTaxValue + '--.--';
     _taxElement.appendChild(_taxElement_span);
     return _taxElement;
 }
@@ -648,7 +671,11 @@ async function appendInfiniteScrollTiles(cb = ()=>{}){
     // },100);
 }
 
-
+/**
+ * AVE PAGETYPE ENUM
+ * @readonly
+ * @enum {number}
+ */
 const PAGETYPE = {
     NEW_ITEMS: 0,
     FAVORITES: 1,
@@ -660,10 +687,9 @@ const PAGETYPE = {
     ORIGINAL_SELLER: 102
 }
 
-let nothingToResolve = false;
+let nothingToResolve = true;
 
 function clearPriorPO() {
-    nothingToResolve = false;
     const _poContainer = document.getElementById('vvp-generic-order-success-msg');
     if (_poContainer) _poContainer.remove();
     const _errorCont = document.getElementById('vvp-generic-request-error-msg');
@@ -689,6 +715,7 @@ function createNewSite(type, data) {
             database.getNewEntries().then((_prodArr) => {
                 createProductSite(type, _prodArr, () => {
                     initTileEventHandlers();
+                     nothingToResolve = false;
                     const _btn = document.getElementById('ave-btn-list-new');
                     _btn.classList.add('a-button-selected');
                     _btn.setAttribute('aria-checked', true);
@@ -701,6 +728,7 @@ function createNewSite(type, data) {
             database.getFavEntries().then((_prodArr) => {
                 createProductSite(type, _prodArr, () => {
                     initTileEventHandlers();
+                     nothingToResolve = false;
                     const _btn = document.getElementById('ave-btn-favorites');
                     _btn.classList.add('a-button-selected');
                     _btn.setAttribute('aria-checked', true);
@@ -711,7 +739,7 @@ function createNewSite(type, data) {
         case PAGETYPE.ALL:{
             currentMainPage = PAGETYPE.ALL;
             createInfiniteScrollSite(currentMainPage,(tilesContainer) => {
-                const _baseUrl = (/(http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}\/vine\/vine-items)/.exec(window.location.href))[1];
+                const _baseUrl = (/(http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}.{0,1}[a-z]{0,}\/vine\/vine-items)/.exec(window.location.href))[1];
                 const _preloadPages = ['potluck', 'last_chance', 'encore']
                 infiniteScrollLastPreloadedPage = 1;
                 infiniteScrollMaxPreloadPage = 100;
@@ -728,6 +756,7 @@ function createNewSite(type, data) {
                                 infiniteScrollTilesBufferArray = infiniteScrollTilesBufferArray.concat(tiles3);
                                 appendInfiniteScrollTiles();
                                 setTimeout(()=> {
+                                    nothingToResolve = false;
                                     handleInfiniteScroll(); // Just to trigger first preloads
                                 }, 500);
                             })
@@ -746,6 +775,7 @@ function createNewSite(type, data) {
             currentMainPage = PAGETYPE.SEARCH_RESULT;
             createProductSite(type, data, () => {
                 initTileEventHandlers();
+                 nothingToResolve = false;
             });
             break;
         }
@@ -794,8 +824,9 @@ function btnEventhandlerClick(event, data) {
         database.get(data.recommendation_id).then(async (prod) => {
             if (SETTINGS.DebugLevel > 10) console.log(`btnEventhandlerClick() got respose from DB:`, prod);
             if (prod) {
-                prod.isNew = false;
+                prod.isNew = null;
                 requestProductDetails(prod).then((_newProd) => {
+                    console.log('btnEvent update');
                     database.update(_newProd || prod).then( () => {
                         updateTileStyle(_newProd || prod);
                     });
@@ -811,7 +842,7 @@ function favStarEventhandlerClick(event, data) {
         database.get(data.recommendation_id).then((prod) => {
             if (SETTINGS.DebugLevel > 10) console.log(`favStarEventhandlerClick() got respose from DB:`, prod);
             if (prod) {
-                prod.isFav = !prod.isFav;
+                prod.isFav = (prod.isFav == 'true'? null : 'true');
                 database.update(prod).then(() => {
                     updateTileStyle(prod);
                 });
@@ -837,14 +868,14 @@ function updateTileStyle(prod) {
 
         if (_id == prod.data_recommendation_id) {
             if (SETTINGS.DebugLevel > 10) console.log(`Found Tile with id: ${prod.id}`);
-            _tile.setAttribute('style', (prod.isFav) ? SETTINGS.CssProductFavTag : (prod.isNew) ? SETTINGS.CssProductNewTag : SETTINGS.CssProductDefault);
+            _tile.setAttribute('style', (prod.isFav == 'true') ? SETTINGS.CssProductFavTag : (prod.isNew == 'true') ? SETTINGS.CssProductNewTag : SETTINGS.CssProductDefault);
             const _favStar = _tile.querySelector('.ave-favorite-star');
-            _favStar.style.color = (prod.isFav) ? SETTINGS.FavStarColorChecked : 'white'; // SETTINGS.FavStarColorChecked = Gelb;
+            _favStar.style.color = (prod.isFav == 'true') ? SETTINGS.FavStarColorChecked : 'white'; // SETTINGS.FavStarColorChecked = Gelb;
 
             const _taxValue = formatTax(prod);
             if (['number','string'].includes(typeof _taxValue)) {
                 const _taxValueElem = _tile.querySelector('.ave-taxinfo-text');
-                _taxValueElem.innerText = (_taxValueElem.innerText).replace('--.--', _taxValue);
+                _taxValueElem.innerText = `Tax Value: ${_taxValue}`;
             }
             return;
         }
@@ -858,7 +889,7 @@ function initTileEventHandlers() {
     const _tileLength = _tiles.length;
 
     for(let i = 0; i < _tileLength; i++) {
-        if (SETTINGS.DebugLevel > 15) console.log(`Adding Eventhandler to Tile ${i}`);
+        if (SETTINGS.DebugLevel > 10) console.log(`Adding Eventhandler to Tile ${i}`);
         const _currTile = _tiles[i];
         addTileEventhandlers(_currTile);
     }
@@ -1411,7 +1442,7 @@ function createSettingsMenuElement(dat){
         _elem_keyword_input_input.setAttribute('placeholder', dat.inputPlaceholder);
         _elem_keyword_input_input.addEventListener('change', (elm, ev) => {
             console.log('EVENTHANDLER CHANGE:', elm, 'event:', ev);
-            const _value = elm.target.value.trim();
+            const _value = elm.target.value.trim().toLowerCase();
             if (_value && _value.length > 0 && !SETTINGS[dat.key].includes(_value)) SETTINGS[dat.key].push(_value);
             SETTINGS.save();
             elm.target.value = '';
@@ -1768,7 +1799,7 @@ async function cleanUpDatabase(cb = () => {}) {
 
 
 
-                if ((_currEntry.notSeenCounter > SETTINGS.NotSeenMaxCount || _currEntry.forceRemove) && !_currEntry.isFav) {
+                if ((_currEntry.notSeenCounter > SETTINGS.NotSeenMaxCount || _currEntry.forceRemove) && !(_currEntry.isFav == true)) {
                     if (SETTINGS.DebugLevel > 10) console.log(`cleanUpDatabase() - Removing Entry ${_currEntry.id}`);
 
                     database.removeID(_currEntry.id).then((ret) => {
@@ -1900,19 +1931,23 @@ function resolveProducts() {
             _itemsResolved++;
             if (_itemsResolved == _itemsToResolve+1) return;
         database.get(_id).then((prod) => {
+             if (prod === undefined ){
+                _selTax.innerText = cTaxValue + '(not found)';
+             }
+             else {
             requestProductDetails(prod).then((_newProd) => {
                 const _taxValue = formatTax(_newProd); //_newProd.data_estimated_tax_prize;
                 if (['number','string'].includes(typeof _taxValue)) {
                     database.update(_newProd || prod, false).then( () => {
-                        _selTax.innerText = (_selTax.innerText).replace('--.--', _taxValue);
+                        _selTax.innerText = cTaxValue + _taxValue;
                     });
                 } else {
-                    _selTax.innerText = (_selTax.innerText).replace('--.--','(no longer availble)');
+                    _selTax.innerText = cTaxValue + '(no longer availble)';
                 }
             }).catch(function(error) {
-                    _selTax.innerText = (_selTax.innerText).replace('--.--', '(no longer availble)');
+                    _selTax.innerText = cTaxValue +'(no longer availble)';
             })
-        })
+        } })
         }
       }
     }
@@ -1934,7 +1969,7 @@ function initBackgroundScan() {
     if  (!SETTINGS.EnableBackgroundScan) {console.warn('initBackgroundScan(): Backgroundscan is disabled => Exit');return;}
     if (!AVE_IS_THIS_SESSION_MASTER) {console.warn('initBackgroundScan(): This Instance is not the Master Session! => don´t start BackgroundScan'); return;}
     BackGroundScanIsRunning = true;
-    const _baseUrl = (/(http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}\/vine\/vine-items)/.exec(window.location.href))[1];
+    const _baseUrl = (/(http[s]{0,1}\:\/\/[w]{0,3}.amazon.[a-z]{1,}.{0,1}[a-z]{0,}\/vine\/vine-items)/.exec(window.location.href))[1];
 
     // Create iFrame if not exists
     if (!document.querySelector('#ave-iframe-backgroundloader')) {
@@ -1967,7 +2002,8 @@ function initBackgroundScan() {
             }
 
             let lastRun = localStorage.getItem('AVE_BACKGROUND_SCAN_LAST');
-            if (lastRun == '' || lastRun + SECONDS_PER_HOUR < unixTimeStamp() ) {
+            console.log('lastRun: ', lastRun);
+            if (lastRun == '' || lastRun + SECONDS_BEFORE_RESET < unixTimeStamp() ) {
                 if (SETTINGS.DebugLevel >= 5) console.log('initBackgroundScan(): Restarting scan from page 0');
                 localStorage.setItem('AVE_BACKGROUND_SCAN_LAST', unixTimeStamp());
                 localStorage.setItem('AVE_BACKGROUND_SCAN_STAGE', 0);
@@ -2034,7 +2070,7 @@ function initBackgroundScan() {
                     }
                 }
                 function _scanFinished() {
-                    if (SETTINGS.DebugLevel > 10) console.log(`initBackgroundScan()._scanFinished()`);
+                    if (SETTINGS.DebugLevel > 15) console.log(`initBackgroundScan()._scanFinished()`);
                     localStorage.setItem('AVE_BACKGROUND_SCAN_STAGE', _backGroundScanStage);
                     localStorage.setItem('AVE_BACKGROUND_SCAN_PAGE_CURRENT', _subStage);
                     localStorage.setItem('AVE_BACKGROUND_SCAN_LAST', unixTimeStamp());
@@ -2053,12 +2089,12 @@ function backGroundTileScanner(url, cb) {
     ave.backGroundIFrame = _iframeDoc;
     _iframeDoc.location.href = url;
     const _loopDelay = setInterval(() => {
-        if (SETTINGS.DebugLevel > 15) console.log(`backgroundTileScanner(): check if we have tiles to read...`);
+        if (SETTINGS.DebugLevel > 10) console.log(`backgroundTileScanner(): check if we have tiles to read...`);
         const _tiles =_iframeDoc.querySelectorAll('.vvp-item-tile');
         if (_tiles) {
-            if (SETTINGS.DebugLevel > 15) console.log(`backgroundTileScanner(): Found first Tile`);
+            if (SETTINGS.DebugLevel > 10) console.log(`backgroundTileScanner(): Found first Tile`);
             const _tilesLength = _tiles.length;
-            if (SETTINGS.DebugLevel > 15) console.log(`BackgroundsScan Querryd: ${url} and got ${_tilesLength} Tiles`);
+            if (SETTINGS.DebugLevel > 10) console.log(`BackgroundsScan Querryd: ${url} and got ${_tilesLength} Tiles`);
             clearInterval(_loopDelay);
             if (_tilesLength > 0) {
                 let _returned = 0;
@@ -2067,8 +2103,8 @@ function backGroundTileScanner(url, cb) {
                     _tilesProm.push(parseTileData(_tiles[i]).then((prod) => {
                         _returned++;
                         if (SETTINGS.DebugLevel > 14) console.log(`BACKGROUNDSCAN => Got TileData Back: Tile ${_returned}/${_tilesLength} =>`, prod);
-                        if (!prod.gotFromDB) database.add(prod);
-
+                        if (!prod.gotFromDB)
+                            database.add(prod);
                     }))
                 }
 
@@ -2156,7 +2192,7 @@ function stickElementToTopScrollEVhandler(elemID, dist) {
             const _elemInitialTop = parseInt(_elem.getAttribute('ave-data-default-top'));
             if (!_elemInitialTop) {_elem.setAttribute('ave-data-default-top', (window.scrollY + _elemRect.top)); return;}
 
-            if (SETTINGS.DebugLevel > 15) console.log(`### scrollY:${window.scrollY} maxScrollHeigt ${maxScrollHeight} initialTop: ${_elemInitialTop}`);
+            if (SETTINGS.DebugLevel > 10) console.log(`### scrollY:${window.scrollY} maxScrollHeigt ${maxScrollHeight} initialTop: ${_elemInitialTop}`);
 
             if (window.scrollY >= (_elemInitialTop - parseInt(dist))) {
                 _elem.style.position = "fixed";
@@ -2305,11 +2341,11 @@ function addStyleToTile(_currTile, _product) {
         _currTile.classList.add('ave-element-saved');
     } else {
         let _style = SETTINGS.CssProductDefault;
-        if(_product.isNew) {
+        if(_product.isNew == 'true') {
             _style = SETTINGS.CssProductNewTag;
             _currTile.classList.add('ave-element-new');
         }
-        if(_product.isFav) {
+        if(_product.isFav == 'true') {
             _style = SETTINGS.CssProductFavTag;
             _currTile.classList.add('ave-element-fav');
         }
@@ -2327,7 +2363,7 @@ function addStyleToTile(_currTile, _product) {
 
 async function requestProductDetails(prod) {
     return new Promise(async (resolve, reject) => {
-        if (prod.data_asin_is_parent) {// Lets get the Childs first
+        if ( prod.data_asin_is_parent) {// Lets get the Childs first
             fetch(`${window.location.origin}/vine/api/recommendations/${prod.id}`.replace(/#/g, '%23')).then(r => r.json()).then(async (res) => {
                 if (res.error) {
                     if (res.error.exceptionType == 'ITEM_NOT_IN_ENROLLMENT') {
@@ -2352,7 +2388,12 @@ async function requestProductDetails(prod) {
                         if (!childData.error) {
                             prod.data_estimated_tax_prize = childData.result.taxValue;
                             prod.data_tax_currency = childData.result.taxCurrency;
-                            // Don't care about largest tax value
+                            // Copy over all returned datapoints od child asin
+                            //Object.assign(_child, childData.result);
+                            /*if (prod.data_estimated_tax_prize < _child.taxValue) {
+                                prod.data_estimated_tax_prize = _child.taxValue;
+                                prod.data_tax_currency = _child.taxCurrency;
+                            }*/
                         }
                     }))
                 //}
@@ -2383,9 +2424,7 @@ async function requestProductDetails(prod) {
 
 
 function init(hasTiles) {
-    // Get all Products on this page ;)
-
-
+    // Get all Products on this page ;
     if (AUTO_SCAN_IS_RUNNING) showAutoScanScreen(`Autoscan is running...Page (${AUTO_SCAN_PAGE_CURRENT}/${AUTO_SCAN_PAGE_MAX})`);
 
     const _aveSubpageRequest = getUrlParameter('ave-subpage');
@@ -2409,6 +2448,7 @@ function init(hasTiles) {
             }));
 
             Promise.allSettled(_tilePorms).then(() => {
+                nothingToResolve = false;
                 if(INIT_AUTO_SCAN) {
                     startAutoScan();
                 } else if (AUTO_SCAN_IS_RUNNING) {
@@ -2440,13 +2480,13 @@ function init(hasTiles) {
     const _searchBarSpan = document.createElement('span');
     _searchBarSpan.setAttribute('class', 'ave-search-container');
     _searchBarSpan.style.cssText = `margin: 0.5em;`;
-    // _searchBarSpan.innerHTML = `<input type="text" style="width: 30em;" placeholder="Search Vine Products" name="ave-search">`;
+    // _searchBarSpan.innerHTML = `<input type="text" style="width: 20em;" placeholder="Search Vine Products" name="ave-search">`;
 
     const _searchBarInput = document.createElement('input');
     _searchBarInput.setAttribute('type', 'search');
     _searchBarInput.setAttribute('placeholder', 'Search Vine Products');
     _searchBarInput.setAttribute('name', 'ave-search');
-    _searchBarInput.style.cssText = `width: 30em;`;
+    _searchBarInput.style.cssText = `width: 20em;`;
     _searchBarInput.addEventListener('keyup', (ev) => {
         const _input = _searchBarInput.value.toLowerCase();
         if (SETTINGS.DebugLevel > 10) console.log(`Updated Input: ${_input}`);
@@ -2480,26 +2520,57 @@ function init(hasTiles) {
         if (SETTINGS.DebugLevel > 10) console.log('Manipulating Pageination');
 
         const _nextBtn = _pageinationContainer.lastChild;
-        const _isNextBtnDisabled = (_nextBtn.getAttribute('class') != 'a-last');
+        const _isNextBtnDisabled = _nextBtn.classList.contains('a-disabled');
         const _nextBtnLink = _nextBtn.lastChild.getAttribute('href');
+        const _btn = _nextBtn.cloneNode(true);
+        const anchorTag = _btn.querySelector('a');
 
+        const _aveNextPageButtonText = 'Read <span class="a-letter-space"></span><span class="a-letter-space"></span><span class="larr">→</span>';
+
+        const _AveNextArrow = document.createElement('style');
+        _AveNextArrow.type = 'text/css';
+        _AveNextArrow.innerHTML = `.ave-arrow::after{border-style: solid; border-width: 2px 2px 0 0; content: ''; padding: 2.5px; visibility: visible; display: inline-block; position: relative; left: -9px; top: -1px; transform: rotate(45deg);}`;
         if (!_isNextBtnDisabled) {
             _nextBtn.setAttribute('class', 'a-normal');
+            _nextBtn.querySelector('span.larr').style.visibility = 'hidden';
+            _nextBtn.querySelector('span.larr').classList.add('ave-arrow');
         }
 
-        const _btn = document.createElement('li');
-        _btn.setAttribute('class', 'a-last');
-        _btn.addEventListener('click', () => {
-            markAllCurrentSiteProductsAsSeen(() => {
-                window.location.href = (_nextBtnLink);
-            });
-        })
+        if (anchorTag) {
+            anchorTag.innerHTML = _aveNextPageButtonText;
+        }
+        else {
+            _btn.innerHTML = _aveNextPageButtonText;
+        }
 
-        const _btn_a = document.createElement('a');
-        _btn_a.setAttribute('style', 'background-color: lime');
-        _btn_a.innerHTML = 'Mark all as seen and Next<span class="a-letter-space"></span><span class="a-letter-space"></span><span class="larr">→</span>';
+        _btn.style.backgroundColor = 'lime';
+        _btn.style.borderRadius = '8px';
 
-        _btn.appendChild(_btn_a);
+        if(!_nextBtn.classList.contains('a-disabled')){
+            _btn.setAttribute('class', 'a-last');
+            _btn.style.cursor = 'pointer';
+            _btn.addEventListener('click', () => {
+                markAllCurrentSiteProductsAsSeen(() => {
+                    window.location.href = (_nextBtnLink);
+                });
+            })
+        }
+
+        //const _btn_a = document.createElement('a');
+        //_btn_a.setAttribute('style', 'background-color: lime');
+        //_btn_a.innerHTML = 'Alle als gesehen markieren und Nächste<span class="a-letter-space"></span><span class="a-letter-space"></span><span class="larr">→</span>';
+
+        //_btn.appendChild(_btn_a);
         _pageinationContainer.appendChild(_btn);
+        _pageinationContainer.appendChild(_AveNextArrow);
     }
+
+    const bar = document.querySelector('#nav-main');
+    bar.style.display = 'none';
+
+    //const bar2 = document.querySelector('#vvp-header');
+    //if (bar2) bar2.removeClass("a-section")
+    //bar.parentElement.removeChild(bar);
 }
+
+
