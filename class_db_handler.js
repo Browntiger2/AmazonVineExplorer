@@ -64,10 +64,9 @@ class DB_HANDLER {
                     if (!_db.objectStoreNames.contains(_storeName)) {
                         if (SETTINGS.DebugLevel > 10) console.log('Database needs to be created...');
                         const _storeOS = _db.createObjectStore(_storeName, { keyPath: 'id' });
-                        // our searches will be much faster if we index and store true or null (null is not valid key)
-                        // _storeOS.createIndex('isNew', 'isNew', { unique: false });
-                        // _storeOS.createIndex('isFav', 'isFav', { unique: false });
-                        _storeOS.createIndex('data_asin', 'data_asin', { unique: true });
+                         _storeOS.createIndex('isNew', 'isNew', { unique: false });
+                         _storeOS.createIndex('isFav', 'isFav', { unique: false });
+                        _storeOS.createIndex('data_asin', 'data_asin', { unique: false });
                     } else {
                         // Get a reference to the implicit transaction for this request
                         // @type IDBTransaction
@@ -85,17 +84,19 @@ class DB_HANDLER {
                                 // _store.createIndex('data_asin', 'data_asin');
                                 break;
                             }
-                            case 2: {
+                            /*case 2: {
                                 if (this.#checkForDuplicatedASIN()) {
-                                    _storeOS.createIndex('data_asin', 'data_asin', { unique: true });
+                                    _store.createIndex('data_asin', 'data_asin', { unique: true });
                                 }   
                                 break;
-                            }
-                            case 3: {
-                                //  _store.createIndex('data_asin', 'data_asin');
-                                // data_asin is not really unique like parent to child items
-                                _storeOS.deleteIndex('data_asin')
-                                _storeOS.createIndex('data_asin', 'data_asin', { unique: false });
+                            }*/
+                            case 2: {
+                                  console.log('upgrading db to version 3');
+                                  _store.deleteIndex('data_asin');
+                                  this.#MigrateStore2(_transaction, _storeName);
+                                  _store.createIndex('data_asin', 'data_asin', { unique: false });
+                                  _store.createIndex('isNew', 'isNew', { unique: false });
+                                  _store.createIndex('isFav', 'isFav', { unique: false });
                                 break;
                             }
                             default: {
@@ -136,6 +137,41 @@ class DB_HANDLER {
         _request.onerror = (event) => {cb([]); throw new Error(`DB_HANDLER.#checkForDuplicatedAsin: ${event.target.error.name}`);};
     };
 
+    // Performance fix: Migrate store to faster indexes, from getAll(s)
+    // null is invalid key and will not be in our index, so the indexes will only contain one value: true.
+    #MigrateStore2(transaction, storeName){
+        const _store = transaction.objectStore(storeName);
+        const _request = _store.openCursor();
+
+        _request.onsuccess = (event) => {
+            var cursor = event.target.result;
+            if(cursor){
+                let _updated = false;
+                const updateData = cursor.value;
+                if (updateData.isNew == false){
+                    updateData.isNew = null;
+                    _updated = true;
+                }
+                if (updateData.isFav == false){
+                    updateData.isFav = null;
+                    _updated = true;
+                } else if (updateData.isFav == true){
+                     updateData.isFav = 'true';
+                    _updated = true;
+                }
+
+                if ( _updated ){
+                    const request = cursor.update(updateData);
+                    request.onsuccess = () => {
+                    };
+                    request.onerror = (event2) => {console.log(`Migration: ${event2.target.error.name}`);};
+                }
+                cursor.continue();
+            }
+            };
+            _request.onerror = (event) => {console.log(`Migration:: ${event.target.error.name}`);};
+
+    }
     /**
      * Fires the Event ave-database-changed when any writeaccess has happend
      */
@@ -173,7 +209,7 @@ class DB_HANDLER {
 
             _request.onerror = (event) => {
                 if (`${event.target.error}`.includes('data_asin')) {
-                    console.error('Tried to ADD New Product with existing ASIN ???', obj);
+                    console.error('Tried to ADD New Product with existing ASIN ???', obj.description_short);
                     // reject(event.target.error);
                     // database.add does nothing with the promise why waste resources
                     resolve();
@@ -242,7 +278,6 @@ class DB_HANDLER {
                 reject(event.target.error);};
 
             _request.onsuccess = (event) => {
-                // console.log('Called DB_HANDLER:update() --> success');
                 if ( bFireUpdate )
                 this.#fireDataChangedEvent();
                 resolve();
@@ -311,16 +346,16 @@ class DB_HANDLER {
     async getNewEntries(){
         return new Promise((resolve, reject) => {
             const _result = [];
-            const _request = this.#getStore().openCursor();
+            //const _request = this.#getStore().openCursor();
+            const _request = this.#getStore().index('isNew').openCursor();
 
             _request.onsuccess = (event) => {
                 const _cursor = event.target.result;
 
                 if (_cursor) {
-                    if (_cursor.value.isNew) {
-                        _result.push(_cursor.value);
+                    if (_cursor.value.isNew == 'true') {
+                     _result.push(_cursor.value);
                     }
-
                     _cursor.continue();
                 } else { // No more entries
                     resolve(_result);
@@ -338,13 +373,14 @@ class DB_HANDLER {
     async getFavEntries(cb){
         return new Promise((resolve, reject) => {
             const _result = [];
-            const _request = this.#getStore().openCursor();
+            //const _request = this.#getStore().openCursor();
+            const _request = this.#getStore().index('isFav').openCursor();
 
             _request.onsuccess = (event) => {
                 const _cursor = event.target.result;
 
                 if (_cursor) {
-                    if (_cursor.value.isFav) {
+                    if (_cursor.value.isFav == 'true') {
                         _result.push(_cursor.value);
                     }
 
